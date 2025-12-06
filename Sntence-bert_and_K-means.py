@@ -25,4 +25,5 @@ courses = [
 
 # 2. ベクトル化（Sentence-BERTで意味を数値に変換）
 print("AIがシラバスを読んでいます...")
-model = Sentence
+# モデルの名前を正しく指定する
+model = SentenceTransformer('stsb-xlm-r-multilingual')
