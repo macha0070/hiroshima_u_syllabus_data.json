@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>爆速シラバス推薦デモ</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        #results { margin-top: 20px; }
+        .course-card { border: 1px solid #ddd; padding: 10px; margin-bottom: 5px; border-radius: 5px; }
+        .score { font-weight: bold; color: #d32f2f; }
+    </style>
+</head>
+<body>
+
+    <h1>シラバス推薦システム (Client-Side)</h1>
+    <p>Loading status: <span id="status">JSON読み込み中...</span></p>
+
+    <button onclick="recommendRandom()" id="btn" disabled>ランダムな興味で推薦を実行</button>
+
+    <div id="results"></div>
+
+    <script>
+        let syllabusData = [];
+
+        // 1. JSONデータを読み込む
+        fetch('syllabus_vectors.json')
+            .then(response => response.json())
+            .then(data => {
+                syllabusData = data;
+                document.getElementById('status').innerText = `完了 (全${data.length}件)`;
+                document.getElementById('btn').disabled = false;
+            })
+            .catch(err => document.getElementById('status').innerText = "エラー: JSONが見つかりません");
+
+        // 2. コサイン類似度を計算する関数 (これがエンジンの核心)
+        function cosineSimilarity(vecA, vecB) {
+            let dotProduct = 0;
+            let normA = 0;
+            let normB = 0;
+            for (let i = 0; i < vecA.length; i++) {
+                dotProduct += vecA[i] * vecB[i];
+                normA += vecA[i] * vecA[i];
+                normB += vecB[i] * vecB[i];
+            }
+            // ゼロ除算回避
+            if (normA === 0 || normB === 0) return 0;
+            return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+        }
+
+        // 3. 推薦実行
+        function recommendRandom() {
+            const startTime = performance.now(); // 時間計測開始
+
+            // テスト用に「ランダムな興味ベクトル」を生成 (本来はユーザー入力)
+            // ベクトルの長さはデータの次元数(300)に合わせる
+            const dimension = syllabusData[0].vector.length;
+            const userVector = Array.from({length: dimension}, () => Math.random());
+
+            // 全件との距離を計算
+            const scoredCourses = syllabusData.map(course => {
+                return {
+                    ...course,
+                    score: cosineSimilarity(userVector, course.vector)
+                };
+            });
+
+            // スコアが高い順にソート (ここが一番重い処理)
+            scoredCourses.sort((a, b) => b.score - a.score);
+
+            // トップ5を表示
+            const top5 = scoredCourses.slice(0, 5);
+            
+            const endTime = performance.now(); // 時間計測終了
+
+            // 結果表示
+            const resultDiv = document.getElementById('results');
+            resultDiv.innerHTML = `<h3>計算時間: ${(endTime - startTime).toFixed(2)} ms (ミリ秒)</h3>`;
+            
+            top5.forEach(c => {
+                resultDiv.innerHTML += `
+                    <div class="course-card">
+                        <span class="score">一致度: ${(c.score * 100).toFixed(1)}%</span> 
+                        ${c.name} (ID: ${c.id})
+                    </div>`;
+            });
+        }
+    </script>
+</body>
+</html>
