@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>シラバス AI推薦システム</title>
+    <style>
+        body { font-family: "Helvetica Neue", Arial, sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; background-color: #f4f7f6; color: #333; }
+        h1 { text-align: center; color: #2c3e50; }
+        
+        /* 検索パネル */
+        .search-panel { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .full-width { grid-column: 1 / -1; }
+        
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9em; }
+        select, input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        
+        button { background-color: #3498db; color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; font-size: 1em; font-weight: bold; margin-top: 10px; transition: 0.2s; }
+        button:hover { background-color: #2980b9; }
+        button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        /* 結果表示 */
+        #results-area { margin-top: 20px; }
+        .card { background: white; padding: 15px; margin-bottom: 10px; border-radius: 6px; border-left: 5px solid #ddd; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: 0.2s; }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .card h3 { margin: 0 0 5px 0; color: #2c3e50; }
+        .card .meta { font-size: 0.85em; color: #7f8c8d; margin-bottom: 8px; }
+        .card .desc { font-size: 0.9em; line-height: 1.4; color: #555; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .score-badge { float: right; background: #e74c3c; color: white; padding: 3px 8px; border-radius: 10px; font-size: 0.8em; font-weight: bold; }
+        
+        /* ローディング */
+        #loading { text-align: center; margin-top: 50px; font-size: 1.2em; color: #666; }
+    </style>
+</head>
+<body>
+
+    <h1>🔍 授業推薦AI</h1>
+
+    <div id="loading">データを読み込み中...</div>
+
+    <div class="search-panel" id="search-panel" style="display:none;">
+        <div>
+            <label>開講部局</label>
+            <select id="filter-dept"><option value="">指定なし</option></select>
+        </div>
+        <div>
+            <label>開講キャンパス</label>
+            <select id="filter-campus"><option value="">指定なし</option></select>
+        </div>
+        <div>
+            <label>開設期</label>
+            <select id="filter-term"><option value="">指定なし</option></select>
+        </div>
+        <div>
+            <label>学習の段階</label>
+            <select id="filter-level"><option value="">指定なし</option></select>
+        </div>
+
+        <div class="full-width">
+            <label>興味のあるキーワード（スペース区切りで入力）</label>
+            <input type="text" id="user-keywords" placeholder="例: 国際 文化 プログラミング 心理... (AIが関連度を計算します)">
+        </div>
+
+        <div class="full-width">
+            <button onclick="executeSearch()">この条件で検索・推薦を実行</button>
+        </div>
+    </div>
+
+    <div id="results-area"></div>
+
+    <script>
+        // グローバル変数
+        let rawData = {};    // 詳細情報 (subject_details...)
+        let vectorData = {}; // ベクトル情報 (syllabus_vectors...)
+        let vocab = {};      // 単語辞書
+
+        // ファイルパス (ファイル名は適宜合わせてください)
+        const RAW_FILE = 'subject_details_main_2025-04-03.json';
+        const VEC_FILE = 'syllabus_vectors.json';
+
+        // 1. 初期化・データ読み込み
+        Promise.all([
+            fetch(RAW_FILE).then(r => r.json()),
+            fetch(VEC_FILE).then(r => r.json())
+        ]).then(([raw, vec]) => {
+            rawData = raw;
+            vectorData = vec.courses; // 配列部分
+            vocab = vec.vocabulary;   // 辞書部分
+
+            initFilters(); // フィルタの選択肢を自動生成
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('search-panel').style.display = 'grid';
+        }).catch(err => {
+            document.getElementById('loading').innerText = "エラー: データファイルが見つかりません。" + err;
+        });
+
+        // フィルタの選択肢をデータから自動で作る
+        function initFilters() {
+            const depts = new Set();
+            const campuses = new Set();
+            const terms = new Set();
+            const levels = new Set();
+
+            Object.values(rawData).forEach(d => {
+                if(d["開講部局"]) depts.add(d["開講部局"]);
+                if(d["開講キャンパス"]) campuses.add(d["開講キャンパス"]);
+                if(d["開設期"]) terms.add(d["開設期"]);
+                if(d["学習の段階"]) levels.add(d["学習の段階"]);
+            });
+
+            addOptions("filter-dept", depts);
+            addOptions("filter-campus", campuses);
+            addOptions("filter-term", terms);
+            addOptions("filter-level", levels);
+        }
+
+        function addOptions(id, setObj) {
+            const select = document.getElementById(id);
+            Array.from(setObj).sort().forEach(val => {
+                const opt = document.createElement("option");
+                opt.value = val;
+                opt.innerText = val;
+                select.appendChild(opt);
+            });
+        }
+
+        // 2. 検索実行
+        function executeSearch() {
+            const dept = document.getElementById('filter-dept').value;
+            const campus = document.getElementById('filter-campus').value;
+            const term = document.getElementById('filter-term').value;
+            const level = document.getElementById('filter-level').value;
+            const keywords = document.getElementById('user-keywords').value;
+
+            // Step 1: ユーザー入力から「学生ベクトル」を作る
+            const userVector = createVectorFromKeywords(keywords);
+            const useVectorSearch = keywords.trim().length > 0; // キーワードがあればベクトル計算する
+
+            const results = [];
+
+            // Step 2: 全授業をスキャン
+            // (詳細データではなくベクトルデータをベースにループを回す)
+            vectorData.forEach(item => {
+                const id = item.id;
+                const info = rawData[id];
+
+                // 2-1. メタデータフィルタ (詳細データを確認)
+                if (!info) return;
+                if (dept && info["開講部局"] !== dept) return;
+                if (campus && info["開講キャンパス"] !== campus) return;
+                if (term && info["開設期"] !== term) return;
+                if (level && info["学習の段階"] !== level) return;
+
+                // 2-2. スコアリング
+                let score = 0;
+                if (useVectorSearch) {
+                    // ベクトル同士の距離計算
+                    score = cosineSimilarity(userVector, item.vector);
+                } else {
+                    // キーワードがない場合はデータ順 (score=0)
+                    score = 0;
+                }
+
+                results.push({ id: id, info: info, score: score });
+            });
+
+            // Step 3: ランキング (スコア高い順)
+            results.sort((a, b) => b.score - a.score);
+
+            // 表示
+            displayResults(results, useVectorSearch);
+        }
+
+        // キーワード文字列をベクトルに変換する関数
+        // "心理 プログラム" -> [0, 0, ..., 1, ..., 1, ...]
+        function createVectorFromKeywords(text) {
+            const dimension = vectorData[0].vector.length; // ベクトルの長さ(500)
+            const vec = new Array(dimension).fill(0);
+            
+            // スペースで区切る
+            const words = text.replace(/　/g, " ").split(" ");
+            
+            words.forEach(w => {
+                // 辞書にあるか確認
+                if (w in vocab) {
+                    const index = vocab[w];
+                    vec[index] = 1; // その単語の次元を立てる
+                }
+            });
+            return vec;
+        }
+
+        // コサイン類似度計算
+        function cosineSimilarity(vecA, vecB) {
+            let dot = 0;
+            let normA = 0;
+            let normB = 0;
+            for (let i = 0; i < vecA.length; i++) {
+                dot += vecA[i] * vecB[i];
+                normA += vecA[i] * vecA[i];
+                normB += vecB[i] * vecB[i];
+            }
+            if (normA === 0 || normB === 0) return 0;
+            return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+        }
+
+        // 結果表示用
+        function displayResults(results, isRanked) {
+            const area = document.getElementById('results-area');
+            area.innerHTML = `<h3>検索結果: ${results.length}件</h3>`;
+
+            // 重いので上位100件だけ表示
+            results.slice(0, 100).forEach(r => {
+                const info = r.info;
+                // 一致度が低いものは足切りしてもいいかも
+                if (isRanked && r.score === 0) return; 
+
+                const scoreDisplay = isRanked ? `<span class="score-badge">一致度: ${(r.score*100).toFixed(0)}%</span>` : "";
+                
+                // HTML生成
+                const html = `
+                    <div class="card">
+                        ${scoreDisplay}
+                        <h3>${info["授業科目名"]} <small>(${info["担当教員名"] || "担当不明"})</small></h3>
+                        <div class="meta">
+                            ${info["開講部局"]} | ${info["開講キャンパス"]} | ${info["開設期"]}
+                        </div>
+                        <div class="desc">${info["授業の目標・概要等"] || "概要なし"}</div>
+                    </div>
+                `;
+                area.innerHTML += html;
+            });
+
+            if (results.length === 0) {
+                area.innerHTML += "<p>条件に合う授業が見つかりませんでした。</p>";
+            }
+        }
+    </script>
+</body>
+</html>
