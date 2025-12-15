@@ -61,34 +61,65 @@ for code_key, info in syllabus_data.items():
 # ==========================================
 print("ベクトル化中...")
 
-# max_features=500: 上位500語だけを使う（これでブラウザからの検索が可能になる）
+# max_features=500: 上位500語だけを使う
 vectorizer = TfidfVectorizer(max_features=500)
 X = vectorizer.fit_transform(corpus)
-vectors = X.toarray().tolist()
 
-# 【重要】単語辞書を取得 (例: {"数学": 0, "文化": 1, ...})
-# これがあれば、ブラウザ側で「数学」と打たれた時に 0番目の数字を見ればいいと分かる
-# numpy.int64対策: 標準のint型に変換
+# 疎行列から非ゼロ要素のみ抽出 (Sparse Format)
+# X は scipy.sparse.csr_matrix
+print("データを圧縮中...")
+sparse_vectors = []
+for i in range(X.shape[0]):
+    row = X.getrow(i)
+    indices = row.indices.tolist()
+    data = row.data.tolist()
+    # 小数点以下を丸めてサイズ削減 (例: 0.123456 -> 0.123)
+    data_rounded = [round(v, 3) for v in data]
+    
+    # { "i": [indices], "v": [values] }
+    sparse_vectors.append([indices, data_rounded])
+
+# 語彙辞書
 vocabulary = {k: int(v) for k, v in vectorizer.vocabulary_.items()}
 
 # ==========================================
-# 保存
+# 保存 1: ベクトルデータ (検索用)
 # ==========================================
-# 授業ごとのデータと、全体の辞書をひとまとめにする
-output_json = {
-    "vocabulary": vocabulary,  # 辞書データ
-    "courses": []              # 各授業のベクトル
+# syllabus_vectors.json
+# 構造: { "vocab": {...}, "vecs": [ [ [idx], [val] ], ... ], "ids": [...] }
+# IDリストもこちらに入れて、インデックスで同期させる
+output_vector_data = {
+    "v": vocabulary,
+    "d": sparse_vectors, # Data
+    "i": course_ids      # IDs (to map index -> ID)
 }
 
-for i, vector in enumerate(vectors):
-    output_json["courses"].append({
-        "id": course_ids[i],
-        "name": course_names[i],
-        "vector": vector
-    })
-
 with open(output_file, "w", encoding="utf-8") as f:
-    json.dump(output_json, f, ensure_ascii=False)
+    json.dump(output_vector_data, f, ensure_ascii=False, separators=(',', ':'))
 
-print(f"完了！ '{output_file}' に保存しました。")
+print(f"完了！ '{output_file}' (ベクトルデータ) を保存しました。")
+
+
+# ==========================================
+# 保存 2: メタデータ (表示用 Lightweight)
+# ==========================================
+metadata_file = "course_metadata.json"
+print("メタデータを生成中...")
+
+metadata_map = {}
+for i, cid in enumerate(course_ids):
+    # 生データから必要な情報だけ抽出
+    raw = syllabus_data.get(cid, {})
+    metadata_map[cid] = {
+        "n": raw.get("授業科目名", ""),       # Name
+        "d": raw.get("開講部局", ""),         # Dept
+        "t": raw.get("開設期", ""),           # Term
+        "w": raw.get("曜日・時限・講義室", ""), # When/Where
+        "i": raw.get("担当教員名", "")        # Instructor
+    }
+
+with open(metadata_file, "w", encoding="utf-8") as f:
+    json.dump(metadata_map, f, ensure_ascii=False, separators=(',', ':'))
+
+print(f"完了！ '{metadata_file}' (メタデータ) を保存しました。")
 print(f"採用された単語数: {len(vocabulary)}")

@@ -4,168 +4,296 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Syllabus Search Engine</title>
+    <title>Hiroshima Univ. Suggestion System</title>
     <style>
         :root {
-            --primary-color: #202124;
-            --secondary-color: #5f6368;
-            --accent-color: #1a73e8;
-            --bg-color: #ffffff;
-            --card-shadow: 0 1px 6px rgba(32, 33, 36, 0.28);
+            --primary: #1a73e8;
+            --surface: #ffffff;
+            --background: #f8f9fa;
+            --text-main: #202124;
+            --text-sub: #5f6368;
+            --border: #dadce0;
+            --success: #188038;
+            --grid-line: #e0e0e0;
         }
 
         body {
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background);
+            color: var(--text-main);
             margin: 0;
-            padding: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            color: var(--primary-color);
-            background-color: var(--bg-color);
         }
 
-        /* Centered Layout Container */
-        .container {
+        /* HEADER */
+        header {
             width: 100%;
-            max-width: 650px;
-            padding: 20px;
+            background: var(--surface);
+            box-shadow: 0 1px 2px rgba(60, 64, 67, 0.3);
             display: flex;
             flex-direction: column;
             align-items: center;
-            transition: all 0.3s ease;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
-        /* "Logo" or Title */
         h1 {
-            font-size: 2.5rem;
-            font-weight: 500;
-            margin-bottom: 30px;
-            margin-top: 15vh;
-            /* Initial vertical center */
-            color: #333;
-            letter-spacing: -1px;
-            transition: margin-top 0.3s ease;
+            margin: 12px 0;
+            font-size: 1.4rem;
+            color: var(--text-main);
         }
 
-        /* Search Bar */
-        .search-box {
+        /* MAIN LAYOUT */
+        .container {
             width: 100%;
-            position: relative;
-            margin-bottom: 20px;
-        }
-
-        input[type="text"] {
-            width: 100%;
-            padding: 14px 20px 14px 45px;
-            font-size: 16px;
-            border: 1px solid #dfe1e5;
-            border-radius: 24px;
-            outline: none;
-            box-shadow: none;
-            transition: box-shadow 0.2s, border-color 0.2s;
+            max-width: 1200px;
+            padding: 20px;
             box-sizing: border-box;
+            display: flex;
+            gap: 20px;
+            height: calc(100vh - 80px);
         }
 
-        input[type="text"]:focus,
-        input[type="text"]:hover {
-            box-shadow: 0 1px 6px rgba(32, 33, 36, 0.28);
-            border-color: rgba(223, 225, 229, 0);
+        /* LEFT: SCHEDULE AREA */
+        .schedule-area {
+            flex: 1;
+            background: var(--surface);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-width: 500px;
         }
 
-        .search-icon {
-            position: absolute;
-            top: 50%;
-            left: 15px;
-            transform: translateY(-50%);
-            width: 20px;
-            height: 20px;
-            fill: #9aa0a6;
+        /* RIGHT: SEARCH AREA */
+        .search-area {
+            flex: 0 0 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            height: 100%;
         }
 
-        /* Status & Loading */
-        #status {
-            font-size: 0.9rem;
-            color: var(--secondary-color);
-            margin-bottom: 10px;
-            height: 20px;
+        /* TABS & PANELS */
+        .search-mode-tabs {
+            display: flex;
+            background: var(--surface);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            padding: 4px;
         }
 
-        /* Results Area */
-        #results {
-            width: 100%;
-            margin-top: 20px;
-            display: none;
-            /* Hidden until search */
-        }
-
-        .result-stats {
-            font-size: 0.85rem;
-            color: var(--secondary-color);
-            margin-bottom: 15px;
-        }
-
-        .course-card {
-            padding: 15px 0;
-            border-bottom: 1px solid #ebebeb;
-        }
-
-        .course-card:last-child {
-            border-bottom: none;
-        }
-
-        .course-title {
-            font-size: 1.1rem;
-            color: #1a0dab;
-            text-decoration: none;
-            display: block;
-            margin-bottom: 4px;
+        .mode-btn {
+            flex: 1;
+            border: none;
+            background: none;
+            padding: 8px;
             cursor: pointer;
-        }
-
-        .course-title:hover {
-            text-decoration: underline;
-        }
-
-        .course-meta {
+            border-radius: 4px;
             font-size: 0.9rem;
-            color: #006621;
         }
 
-        .course-snippet {
-            font-size: 0.9rem;
-            color: var(--secondary-color);
-            margin-top: 4px;
-            line-height: 1.4;
-        }
-
-        .match-score {
-            font-size: 0.8rem;
-            color: #d93025;
+        .mode-btn.active {
+            background: #e8f0fe;
+            color: var(--primary);
             font-weight: bold;
         }
 
-        /* State: When searching, move up */
-        body.has-results h1 {
-            margin-top: 20px;
-            font-size: 1.5rem;
+        .search-content {
+            flex: 1;
+            background: var(--surface);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 15px;
+            display: none;
         }
 
-        body.has-results .container {
-            align-items: flex-start;
+        .search-content.active {
+            display: block;
         }
 
-        .loading-spinner {
-            border: 3px solid #f3f3f3;
+        /* GRID STYLES */
+        .term-selector {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            background: #f1f3f4;
+        }
+
+        .term-tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: var(--text-sub);
+            border-right: 1px solid var(--border);
+        }
+
+        .term-tab:last-child {
+            border-right: none;
+        }
+
+        .term-tab.active {
+            background: var(--surface);
+            color: var(--primary);
+            font-weight: bold;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .timetable-wrapper {
+            flex: 1;
+            overflow: auto;
+            padding: 10px;
+        }
+
+        table.timetable {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            font-size: 0.85rem;
+        }
+
+        .timetable th,
+        .timetable td {
+            border: 1px solid var(--grid-line);
+            text-align: center;
+            padding: 4px;
+            height: 50px;
+        }
+
+        .timetable th {
+            background: #f8f9fa;
+            color: var(--text-sub);
+            font-weight: normal;
+            height: 30px;
+        }
+
+        .timetable .period-col {
+            width: 40px;
+            background: #f8f9fa;
+            font-weight: bold;
+            color: var(--text-sub);
+        }
+
+        .grid-cell {
+            vertical-align: top;
+            font-size: 0.75rem;
+        }
+
+        .class-item {
+            background: #e8f0fe;
+            color: #1967d2;
+            padding: 4px;
+            margin-bottom: 2px;
+            border-radius: 4px;
+            text-align: left;
+            cursor: pointer;
+            border-left: 3px solid #1967d2;
+            line-height: 1.2;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            line-clamp: 3;
+            /* Standard */
+        }
+
+        .class-item:hover {
+            background: #d2e3fc;
+        }
+
+        /* COURSE CARDS */
+        .course-card {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            transition: all 0.2s;
+        }
+
+        .course-title {
+            color: #1a0dab;
+            font-weight: bold;
+            margin-bottom: 4px;
+            font-size: 0.95rem;
+            cursor: pointer;
+        }
+
+        .course-meta {
+            font-size: 0.8rem;
+            color: #5f6368;
+            margin-bottom: 6px;
+        }
+
+        .add-btn {
+            width: 100%;
+            padding: 6px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 5px;
+            color: var(--primary);
+            font-weight: bold;
+            font-size: 0.85rem;
+        }
+
+        .add-btn:hover {
+            background: #f1f3f4;
+        }
+
+        .add-btn.added {
+            background: #e6f4ea;
+            color: var(--success);
+            border-color: transparent;
+        }
+
+        /* INPUTS */
+        .search-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+
+        .filter-select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 8px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+        }
+
+        /* LOADING */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
             border-radius: 50%;
-            border-top: 3px solid var(--accent-color);
-            width: 20px;
-            height: 20px;
             animation: spin 1s linear infinite;
-            display: inline-block;
-            vertical-align: middle;
-            margin-right: 10px;
         }
 
         @keyframes spin {
@@ -182,175 +310,382 @@
 
 <body>
 
+    <div id="loading-screen">
+        <div class="spinner"></div>
+        <p style="margin-top:10px;">Loading Data...</p>
+    </div>
+
+    <header>
+        <h1>Hiroshima Univ. Syllabus Search & Schedule</h1>
+    </header>
+
     <div class="container">
-        <h1>Syllabus Search</h1>
 
-        <div id="status">
-            <div class="loading-spinner"></div> Loading index...
+        <!-- LEFT: SCHEDULE GRID -->
+        <div class="schedule-area">
+            <div class="term-selector">
+                <div class="term-tab active" onclick="setTerm(1)">Term 1 (前期前半)</div>
+                <div class="term-tab" onclick="setTerm(2)">Term 2 (前期後半)</div>
+                <div class="term-tab" onclick="setTerm(3)">Term 3 (後期前半)</div>
+                <div class="term-tab" onclick="setTerm(4)">Term 4 (後期後半)</div>
+            </div>
+
+            <div class="timetable-wrapper">
+                <table class="timetable">
+                    <thead>
+                        <tr>
+                            <th class="period-col"></th>
+                            <th>Mon</th>
+                            <th>Tue</th>
+                            <th>Wed</th>
+                            <th>Thu</th>
+                            <th>Fri</th>
+                        </tr>
+                    </thead>
+                    <tbody id="grid-body">
+                        <!-- JS Generated -->
+                    </tbody>
+                </table>
+            </div>
+            <div style="padding:10px; border-top:1px solid var(--border); text-align:right;">
+                <button onclick="clearSchedule()"
+                    style="color:#d93025; border:none; background:none; cursor:pointer; font-size:0.9rem;">Clear
+                    Schedule</button>
+            </div>
         </div>
 
-        <div class="search-box">
-            <svg class="search-icon" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                <path
-                    d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z">
-                </path>
-            </svg>
-            <input type="text" id="searchInput" placeholder="Search for courses (e.g. 数学, AI, 歴史)..." disabled
-                autocomplete="off">
-        </div>
+        <!-- RIGHT: SEARCH TOOLS -->
+        <div class="search-area">
+            <div class="search-mode-tabs">
+                <button class="mode-btn active" onclick="setSearchMode('ai')">🤖 AI Recommendation</button>
+                <button class="mode-btn" onclick="setSearchMode('filter')">🔍 Details Filter</button>
+            </div>
 
-        <div id="results"></div>
+            <!-- AI Search Panel -->
+            <div id="panel-ai" class="search-content active">
+                <input type="text" id="aiInput" class="search-input" placeholder="Describe your interests...">
+                <div id="ai-results"></div>
+            </div>
+
+            <!-- Filter Search Panel -->
+            <div id="panel-filter" class="search-content">
+                <select id="f-dept" class="filter-select">
+                    <option value="">All Departments</option>
+                </select>
+                <select id="f-term" class="filter-select">
+                    <option value="">Any Term</option>
+                    <option value="前期">前期 (Sem 1)</option>
+                    <option value="後期">後期 (Sem 2)</option>
+                </select>
+                <select id="f-day" class="filter-select">
+                    <option value="">Any Day</option>
+                    <option value="月">月 (Mon)</option>
+                    <option value="火">火 (Tue)</option>
+                    <option value="水">水 (Wed)</option>
+                    <option value="木">木 (Thu)</option>
+                    <option value="金">金 (Fri)</option>
+                </select>
+                <input type="text" id="f-kw" class="search-input" placeholder="Name or Instructor...">
+                <button onclick="runFilterSearch()" class="add-btn"
+                    style="background:var(--primary); color:white;">Search</button>
+                <div id="filter-results" style="margin-top:15px;"></div>
+            </div>
+        </div>
     </div>
 
     <script>
-        let syllabusData = { vocabulary: {}, courses: [] };
-        let isLoaded = false;
+        // --- DATA & STATE ---
+        // vectorData: { v: {vocab}, d: [ [[idx],[val]], ... ], i: [ids] }
+        // detailsData: { "ID": { n, d, t, w, i } }
+        let vectorData = null;
+        let detailsData = null;
+        let mySchedule = new Set();
+        let currentTerm = 1;
 
-        // Japanese Tokenizer (Chrome 87+, Safari 14.1+, Edge 87+)
         const segmenter = new Intl.Segmenter("ja-JP", { granularity: "word" });
 
-        // 1. Load Data
-        fetch('syllabus_vectors.json')
-            .then(response => {
-                if (!response.ok) throw new Error("Failed to load JSON");
-                return response.json();
-            })
-            .then(data => {
-                syllabusData = data;
-                isLoaded = true;
+        // --- INIT ---
+        window.addEventListener('DOMContentLoaded', async () => {
+            initGrid();
+            loadSchedule();
 
-                const statusDiv = document.getElementById('status');
-                statusDiv.style.opacity = '0'; // Fade out
-                setTimeout(() => statusDiv.style.display = 'none', 500);
+            try {
+                // FETCH OPTIMIZED FILES
+                const [vRes, dRes] = await Promise.all([
+                    fetch('syllabus_vectors.json'),
+                    fetch('course_metadata.json')
+                ]);
+                vectorData = await vRes.json();
+                detailsData = await dRes.json();
 
-                const input = document.getElementById('searchInput');
-                input.disabled = false;
-                input.focus();
-            })
-            .catch(err => {
-                document.getElementById('status').innerText = "Error: syllabus_vectors.json not found.";
-                console.error(err);
-            });
+                document.getElementById('loading-screen').style.display = 'none';
 
-        // 2. Search Event
-        const searchInput = document.getElementById('searchInput');
-        searchInput.addEventListener('input', (e) => {
-            if (!isLoaded) return;
-            const query = e.target.value.trim();
-            if (query.length === 0) {
-                clearResults();
-                return;
+                populateFilterDepts();
+                renderScheduleGrid();
+            } catch (e) {
+                document.getElementById('loading-screen').innerHTML = `<p style="color:red">Loading Error: ${e.message}<br>Did you run preprocess001.py?</p>`;
             }
-            performSearch(query);
         });
 
-        function clearResults() {
-            document.body.classList.remove('has-results');
-            document.getElementById('results').style.display = 'none';
-            document.getElementById('results').innerHTML = '';
+        // --- GRID SYSTEM ---
+        function initGrid() {
+            const tbody = document.getElementById('grid-body');
+            let html = '';
+            for (let p = 1; p <= 12; p++) {
+                html += `
+                <tr>
+                    <td class="period-col">${p}</td>
+                    <td id="cell-Mon-${p}" class="grid-cell" data-day="月" data-period="${p}"></td>
+                    <td id="cell-Tue-${p}" class="grid-cell" data-day="火" data-period="${p}"></td>
+                    <td id="cell-Wed-${p}" class="grid-cell" data-day="水" data-period="${p}"></td>
+                    <td id="cell-Thu-${p}" class="grid-cell" data-day="木" data-period="${p}"></td>
+                    <td id="cell-Fri-${p}" class="grid-cell" data-day="金" data-period="${p}"></td>
+                </tr>`;
+            }
+            tbody.innerHTML = html;
         }
 
-        function performSearch(query) {
-            const startTime = performance.now();
+        window.setTerm = function (t) {
+            currentTerm = t;
+            document.querySelectorAll('.term-tab').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.term-tab')[t - 1].classList.add('active');
+            renderScheduleGrid();
+        }
 
-            // A. Create Query Vector
-            const tokens = Array.from(segmenter.segment(query))
-                .filter(s => s.isWordLike)
-                .map(s => s.segment);
+        function parseScheduleString(str) {
+            if (!str) return [];
+            const dayMap = { '月': 'Mon', '火': 'Tue', '水': 'Wed', '木': 'Thu', '金': 'Fri' };
+            const results = [];
 
-            // Simple logic: If we find a word in vocabulary, mark it as 1.
-            // We use a Map or sparse object to store non-zero indices for speed
-            const queryIndices = [];
-            const vocab = syllabusData.vocabulary;
-
-            tokens.forEach(token => {
-                if (vocab.hasOwnProperty(token)) {
-                    queryIndices.push(vocab[token]);
+            // Basic parsing for "月1-2" etc.
+            const parts = str.split(/[,\s]+/);
+            parts.forEach(part => {
+                let dayFn = null;
+                for (let k in dayMap) if (part.includes(k)) dayFn = dayMap[k];
+                const nums = part.match(/\d+/g);
+                if (dayFn && nums && nums.length > 0) {
+                    let start = parseInt(nums[0]);
+                    let end = nums.length > 1 ? parseInt(nums[1]) : start;
+                    let periods = [];
+                    for (let i = start; i <= end; i++) periods.push(i);
+                    results.push({ day: dayFn, periods: periods });
                 }
             });
+            return results;
+        }
 
-            if (queryIndices.length === 0) {
-                // No known words found
-                // We show no results or maybe generic message
-                showResults([], 0, "No matching keywords found.");
-                return;
+        function getTerms(termStr) {
+            if (!termStr) return [];
+            const terms = [];
+            if (termStr.includes("１ターム") || termStr.includes("1ターム")) terms.push(1);
+            if (termStr.includes("２ターム") || termStr.includes("2ターム")) terms.push(2);
+            if (termStr.includes("３ターム") || termStr.includes("3ターム")) terms.push(3);
+            if (termStr.includes("４ターム") || termStr.includes("4ターム")) terms.push(4);
+            if (terms.length === 0) {
+                if (termStr.includes("前期")) terms.push(1, 2);
+                if (termStr.includes("後期")) terms.push(3, 4);
             }
+            return terms;
+        }
 
-            // B. Calculate Cosine Similarity
-            // We only need to check courses that share at least one index with query?
-            // For 10k courses, brute force dot product is basically instant in JS.
-            // Optimization: Only iterate if needed, but 10k * 500 is small.
-            // Sparse Dot Product: Query has few ones.
+        function renderScheduleGrid() {
+            document.querySelectorAll('.grid-cell').forEach(td => td.innerHTML = '');
 
-            const scores = syllabusData.courses.map(course => {
-                const vec = course.vector;
-                let dotProduct = 0;
-                let normA = 0; // Query (Active indices count) -> sqrt(count) if all 1s
-                let normB = 0; // Course vector norm (Can be precalculated, but let's do on fly)
+            mySchedule.forEach(id => {
+                const info = detailsData[id];
+                if (!info) return; // Might happen if ID from old save not in new metadata
 
-                // Dot Product: Only iterate query indices
-                for (let idx of queryIndices) {
-                    if (vec[idx] > 0) {
-                        dotProduct += vec[idx]; // Assuming query weight is 1
+                if (!getTerms(info.t).includes(currentTerm)) return;
+
+                const timeSlots = parseScheduleString(info.w);
+                timeSlots.forEach(slot => {
+                    slot.periods.forEach(p => {
+                        const cellId = `cell-${slot.day}-${p}`;
+                        const cell = document.getElementById(cellId);
+                        if (cell) {
+                            cell.innerHTML += `
+                            <div class="class-item" onclick="removeClass('${id}')" title="${info.n}">
+                                ${info.n}
+                            </div>`;
+                        }
+                    });
+                });
+            });
+        }
+
+        // --- MANAGE SCHEDULE ---
+        window.toggleCourse = function (id) {
+            if (mySchedule.has(id)) mySchedule.delete(id);
+            else mySchedule.add(id);
+            saveSchedule();
+            renderScheduleGrid();
+            refreshButtons(id);
+        }
+
+        window.removeClass = function (id) {
+            if (confirm("Remove this class?")) {
+                mySchedule.delete(id);
+                saveSchedule();
+                renderScheduleGrid();
+                refreshButtons(id);
+            }
+        }
+
+        window.clearSchedule = function () {
+            if (confirm("Clear all?")) {
+                mySchedule.clear();
+                saveSchedule();
+                renderScheduleGrid();
+                document.querySelectorAll('.add-btn.added').forEach(b => {
+                    const bid = b.getAttribute('data-id');
+                    if (bid) refreshButtons(bid);
+                });
+            }
+        }
+
+        function saveSchedule() { localStorage.setItem('mySchedule', JSON.stringify([...mySchedule])); }
+        function loadSchedule() {
+            const s = localStorage.getItem('mySchedule');
+            if (s) JSON.parse(s).forEach(i => mySchedule.add(i));
+        }
+
+        function refreshButtons(id) {
+            const btns = document.querySelectorAll(`.btn-${id}`);
+            btns.forEach(b => {
+                if (mySchedule.has(id)) { b.classList.add('added'); b.innerHTML = '✓ Added'; }
+                else { b.classList.remove('added'); b.innerHTML = '+ Add to Schedule'; }
+            });
+        }
+
+        // --- SEARCH UI ---
+        window.setSearchMode = function (mode) {
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.search-content').forEach(p => p.classList.remove('active'));
+            if (mode === 'ai') {
+                document.querySelector('button[onclick="setSearchMode(\'ai\')"]').classList.add('active');
+                document.getElementById('panel-ai').classList.add('active');
+            } else {
+                document.querySelector('button[onclick="setSearchMode(\'filter\')"]').classList.add('active');
+                document.getElementById('panel-filter').classList.add('active');
+            }
+        }
+
+        function populateFilterDepts() {
+            const depts = new Set();
+            for (let id in detailsData) {
+                if (detailsData[id].d) depts.add(detailsData[id].d);
+            }
+            const sel = document.getElementById('f-dept');
+            Array.from(depts).sort().forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d; opt.innerText = d; sel.appendChild(opt);
+            });
+        }
+
+        // --- FILTER SEARCH ---
+        window.runFilterSearch = function () {
+            const dept = document.getElementById('f-dept').value;
+            const term = document.getElementById('f-term').value;
+            const day = document.getElementById('f-day').value;
+            const kw = document.getElementById('f-kw').value.toLowerCase();
+
+            const matches = [];
+            // Iterate all keys
+            for (let id in detailsData) {
+                const c = detailsData[id];
+                // c structure: { n, d, t, w, i }
+                if (dept && c.d !== dept) continue;
+                if (term && !c.t.includes(term)) continue;
+                if (day && !c.w.includes(day)) continue;
+                if (kw) {
+                    const text = (c.n + c.i).toLowerCase();
+                    if (!text.includes(kw)) continue;
+                }
+                matches.push({ id: id, ...c });
+                if (matches.length >= 50) break;
+            }
+            renderList('filter-results', matches, false);
+        }
+
+        // --- AI SEARCH (SPARSE) ---
+        document.getElementById('aiInput').addEventListener('input', (e) => {
+            const q = e.target.value.trim();
+            if (!q) { document.getElementById('ai-results').innerHTML = ''; return; }
+            performSparseVectorSearch(q);
+        });
+
+        function performSparseVectorSearch(query) {
+            const vocab = vectorData.v; // Dictionary
+            const courses = vectorData.d; // List of [[indices], [values]]
+            const courseIds = vectorData.i; // List of IDs
+
+            const queryIndices = [];
+            Array.from(segmenter.segment(query)).filter(x => x.isWordLike).forEach(w => {
+                if (vocab[w.segment] !== undefined) queryIndices.push(vocab[w.segment]);
+            });
+
+            if (queryIndices.length === 0) { renderList('ai-results', []); return; }
+
+            // Scores Map
+            const scores = [];
+            const queryNorm = Math.sqrt(queryIndices.length); // Simplified
+
+            for (let i = 0; i < courses.length; i++) {
+                const [indices, values] = courses[i];
+                let dot = 0;
+                let sumSq = 0;
+
+                // Sparse Dot Product
+                // O(N_course_terms * N_query_terms) ? No, just linear scan matched or hash lookup
+                // Query is small array. Iterate query indices or course indices?
+                // Since course is stored as sorted indices? No guarantees. 
+                // Simple loop:
+                for (let k = 0; k < indices.length; k++) {
+                    sumSq += values[k] * values[k];
+                    if (queryIndices.includes(indices[k])) {
+                        dot += values[k]; // Assuming query vector is binary 1s
                     }
                 }
 
-                // If no overlap, score is 0
-                if (dotProduct === 0) return { ...course, score: 0 };
-
-                // Norm Calculation
-                // Query Norm: sqrt(number of query words found) assuming binary 1 vector
-                normA = Math.sqrt(queryIndices.length);
-
-                // Course Norm: sum(val^2)
-                // Optimization: Pre-calculate norms in Python would be better, but loop is fast enough
-                for (let v of vec) {
-                    normB += v * v;
+                if (dot > 0) {
+                    let normC = Math.sqrt(sumSq);
+                    scores.push({
+                        id: courseIds[i],
+                        score: dot / (queryNorm * normC)
+                    });
                 }
-                normB = Math.sqrt(normB);
+            }
 
-                const similarity = dotProduct / (normA * normB);
-                return { ...course, score: similarity };
-            });
-
-            // C. Sort
             scores.sort((a, b) => b.score - a.score);
-            const topResults = scores.slice(0, 10).filter(c => c.score > 0);
-
-            const endTime = performance.now();
-            showResults(topResults, endTime - startTime);
+            const results = scores.slice(0, 20).map(x => ({ ...x, ...detailsData[x.id] }));
+            renderList('ai-results', results, true);
         }
 
-        function showResults(results, timeTaken, message) {
-            const resultsDiv = document.getElementById('results');
-            if (results.length > 0 || message) {
-                document.body.classList.add('has-results');
-                resultsDiv.style.display = 'block';
-            } else {
-                return;
-            }
-
-            let html = `<div class="result-stats">${results.length} results (${timeTaken.toFixed(2)} ms)</div>`;
-
-            if (message) {
-                html += `<div style="padding:10px; color:#666;">${message}</div>`;
-            }
-
-            results.forEach(c => {
+        function renderList(targetId, list, showScore) {
+            const container = document.getElementById(targetId);
+            if (list.length === 0) { container.innerHTML = '<div style="color:#777;padding:10px;">No matches</div>'; return; }
+            let html = '';
+            list.forEach(c => {
+                const added = mySchedule.has(c.id);
+                // Schema: n=name, d=dept, t=term, w=when, i=instructor
                 html += `
-                    <div class="course-card">
-                        <div class="course-meta">ID: ${c.id}</div>
-                        <a class="course-title" onclick="alert('Course ID: ${c.id}')">${c.name}</a>
-                        <div class="match-score">Match: ${(c.score * 100).toFixed(1)}%</div>
-                        <div class="course-snippet">
-                           Relevant Keywords matched based on vector analysis.
-                        </div>
+                <div class="course-card">
+                    <div class="course-title" onclick="alert('${c.id}\\n${c.n}')">${c.n}</div>
+                    <div class="course-meta">
+                        ${c.d} | ${c.i}<br>
+                        ${c.w}
                     </div>
-                `;
+                    ${showScore ? `<div style="font-size:0.8rem;color:#d93025;font-weight:bold;">${(c.score * 100).toFixed(0)}% Match</div>` : ''}
+                    <button class="add-btn btn-${c.id} ${added ? 'added' : ''}" 
+                        data-id="${c.id}"
+                        onclick="toggleCourse('${c.id}')">
+                        ${added ? '✓ Added' : '+ Add to Schedule'}
+                    </button>
+                </div>`;
             });
-
-            resultsDiv.innerHTML = html;
+            container.innerHTML = html;
         }
+
     </script>
 </body>
 
