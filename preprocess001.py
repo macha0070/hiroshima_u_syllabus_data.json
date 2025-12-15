@@ -36,6 +36,7 @@ def get_words(text):
 print("形態素解析中...")
 corpus = []
 course_ids = []
+course_names = []
 
 for code_key, info in syllabus_data.items():
     if not isinstance(info, dict): continue
@@ -53,6 +54,7 @@ for code_key, info in syllabus_data.items():
 
     corpus.append(words)
     course_ids.append(code_key)
+    course_names.append(info.get("授業科目名", "名称不明"))
 
 # ==========================================
 # ベクトル化
@@ -66,7 +68,8 @@ vectors = X.toarray().tolist()
 
 # 【重要】単語辞書を取得 (例: {"数学": 0, "文化": 1, ...})
 # これがあれば、ブラウザ側で「数学」と打たれた時に 0番目の数字を見ればいいと分かる
-vocabulary = vectorizer.vocabulary_
+# numpy.int64対策: 標準のint型に変換
+vocabulary = {k: int(v) for k, v in vectorizer.vocabulary_.items()}
 
 # ==========================================
 # 保存
@@ -80,6 +83,7 @@ output_json = {
 for i, vector in enumerate(vectors):
     output_json["courses"].append({
         "id": course_ids[i],
+        "name": course_names[i],
         "vector": vector
     })
 

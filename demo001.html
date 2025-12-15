@@ -1,89 +1,357 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
-    <title>爆速シラバス推薦プロトタイプ</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syllabus Search Engine</title>
     <style>
-        body { font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-        #results { margin-top: 20px; }
-        .course-card { border: 1px solid #ddd; padding: 10px; margin-bottom: 5px; border-radius: 5px; }
-        .score { font-weight: bold; color: #d32f2f; }
-    </style>
-</head>
-<body>
-
-    <h1>シラバス推薦システム (Client-Side)</h1>
-    <p>Loading status: <span id="status">JSON読み込み中...</span></p>
-
-    <button onclick="recommendRandom()" id="btn" disabled>ランダムな興味で推薦を実行</button>
-
-    <div id="results"></div>
-
-    <script>
-        let syllabusData = [];
-
-        // 1. JSONデータを読み込む
-        fetch('syllabus_vectors.json')
-            .then(response => response.json())
-            .then(data => {
-                syllabusData = data;
-                document.getElementById('status').innerText = `完了 (全${data.length}件)`;
-                document.getElementById('btn').disabled = false;
-            })
-            .catch(err => document.getElementById('status').innerText = "エラー: JSONが見つかりません");
-
-        // 2. コサイン類似度を計算する関数 (これがエンジンの核心)
-        function cosineSimilarity(vecA, vecB) {
-            let dotProduct = 0;
-            let normA = 0;
-            let normB = 0;
-            for (let i = 0; i < vecA.length; i++) {
-                dotProduct += vecA[i] * vecB[i];
-                normA += vecA[i] * vecA[i];
-                normB += vecB[i] * vecB[i];
-            }
-            // ゼロ除算回避
-            if (normA === 0 || normB === 0) return 0;
-            return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+        :root {
+            --primary-color: #202124;
+            --secondary-color: #5f6368;
+            --accent-color: #1a73e8;
+            --bg-color: #ffffff;
+            --card-shadow: 0 1px 6px rgba(32, 33, 36, 0.28);
         }
 
-        // 3. 推薦実行
-        function recommendRandom() {
-            const startTime = performance.now(); // 時間計測開始
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            color: var(--primary-color);
+            background-color: var(--bg-color);
+        }
 
-            // テスト用に「ランダムな興味ベクトル」を生成 (本来はユーザー入力)
-            // ベクトルの長さはデータの次元数(300)に合わせる
-            const dimension = syllabusData[0].vector.length;
-            const userVector = Array.from({length: dimension}, () => Math.random());
+        /* Centered Layout Container */
+        .container {
+            width: 100%;
+            max-width: 650px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
 
-            // 全件との距離を計算
-            const scoredCourses = syllabusData.map(course => {
-                return {
-                    ...course,
-                    score: cosineSimilarity(userVector, course.vector)
-                };
+        /* "Logo" or Title */
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 500;
+            margin-bottom: 30px;
+            margin-top: 15vh;
+            /* Initial vertical center */
+            color: #333;
+            letter-spacing: -1px;
+            transition: margin-top 0.3s ease;
+        }
+
+        /* Search Bar */
+        .search-box {
+            width: 100%;
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 14px 20px 14px 45px;
+            font-size: 16px;
+            border: 1px solid #dfe1e5;
+            border-radius: 24px;
+            outline: none;
+            box-shadow: none;
+            transition: box-shadow 0.2s, border-color 0.2s;
+            box-sizing: border-box;
+        }
+
+        input[type="text"]:focus,
+        input[type="text"]:hover {
+            box-shadow: 0 1px 6px rgba(32, 33, 36, 0.28);
+            border-color: rgba(223, 225, 229, 0);
+        }
+
+        .search-icon {
+            position: absolute;
+            top: 50%;
+            left: 15px;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            fill: #9aa0a6;
+        }
+
+        /* Status & Loading */
+        #status {
+            font-size: 0.9rem;
+            color: var(--secondary-color);
+            margin-bottom: 10px;
+            height: 20px;
+        }
+
+        /* Results Area */
+        #results {
+            width: 100%;
+            margin-top: 20px;
+            display: none;
+            /* Hidden until search */
+        }
+
+        .result-stats {
+            font-size: 0.85rem;
+            color: var(--secondary-color);
+            margin-bottom: 15px;
+        }
+
+        .course-card {
+            padding: 15px 0;
+            border-bottom: 1px solid #ebebeb;
+        }
+
+        .course-card:last-child {
+            border-bottom: none;
+        }
+
+        .course-title {
+            font-size: 1.1rem;
+            color: #1a0dab;
+            text-decoration: none;
+            display: block;
+            margin-bottom: 4px;
+            cursor: pointer;
+        }
+
+        .course-title:hover {
+            text-decoration: underline;
+        }
+
+        .course-meta {
+            font-size: 0.9rem;
+            color: #006621;
+        }
+
+        .course-snippet {
+            font-size: 0.9rem;
+            color: var(--secondary-color);
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+
+        .match-score {
+            font-size: 0.8rem;
+            color: #d93025;
+            font-weight: bold;
+        }
+
+        /* State: When searching, move up */
+        body.has-results h1 {
+            margin-top: 20px;
+            font-size: 1.5rem;
+        }
+
+        body.has-results .container {
+            align-items: flex-start;
+        }
+
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid var(--accent-color);
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Syllabus Search</h1>
+
+        <div id="status">
+            <div class="loading-spinner"></div> Loading index...
+        </div>
+
+        <div class="search-box">
+            <svg class="search-icon" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <path
+                    d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z">
+                </path>
+            </svg>
+            <input type="text" id="searchInput" placeholder="Search for courses (e.g. 数学, AI, 歴史)..." disabled
+                autocomplete="off">
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        let syllabusData = { vocabulary: {}, courses: [] };
+        let isLoaded = false;
+
+        // Japanese Tokenizer (Chrome 87+, Safari 14.1+, Edge 87+)
+        const segmenter = new Intl.Segmenter("ja-JP", { granularity: "word" });
+
+        // 1. Load Data
+        fetch('syllabus_vectors.json')
+            .then(response => {
+                if (!response.ok) throw new Error("Failed to load JSON");
+                return response.json();
+            })
+            .then(data => {
+                syllabusData = data;
+                isLoaded = true;
+
+                const statusDiv = document.getElementById('status');
+                statusDiv.style.opacity = '0'; // Fade out
+                setTimeout(() => statusDiv.style.display = 'none', 500);
+
+                const input = document.getElementById('searchInput');
+                input.disabled = false;
+                input.focus();
+            })
+            .catch(err => {
+                document.getElementById('status').innerText = "Error: syllabus_vectors.json not found.";
+                console.error(err);
             });
 
-            // スコアが高い順にソート (ここが一番重い処理)
-            scoredCourses.sort((a, b) => b.score - a.score);
+        // 2. Search Event
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('input', (e) => {
+            if (!isLoaded) return;
+            const query = e.target.value.trim();
+            if (query.length === 0) {
+                clearResults();
+                return;
+            }
+            performSearch(query);
+        });
 
-            // トップ5を表示
-            const top5 = scoredCourses.slice(0, 5);
-            
-            const endTime = performance.now(); // 時間計測終了
+        function clearResults() {
+            document.body.classList.remove('has-results');
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('results').innerHTML = '';
+        }
 
-            // 結果表示
-            const resultDiv = document.getElementById('results');
-            resultDiv.innerHTML = `<h3>計算時間: ${(endTime - startTime).toFixed(2)} ms (ミリ秒)</h3>`;
-            
-            top5.forEach(c => {
-                resultDiv.innerHTML += `
+        function performSearch(query) {
+            const startTime = performance.now();
+
+            // A. Create Query Vector
+            const tokens = Array.from(segmenter.segment(query))
+                .filter(s => s.isWordLike)
+                .map(s => s.segment);
+
+            // Simple logic: If we find a word in vocabulary, mark it as 1.
+            // We use a Map or sparse object to store non-zero indices for speed
+            const queryIndices = [];
+            const vocab = syllabusData.vocabulary;
+
+            tokens.forEach(token => {
+                if (vocab.hasOwnProperty(token)) {
+                    queryIndices.push(vocab[token]);
+                }
+            });
+
+            if (queryIndices.length === 0) {
+                // No known words found
+                // We show no results or maybe generic message
+                showResults([], 0, "No matching keywords found.");
+                return;
+            }
+
+            // B. Calculate Cosine Similarity
+            // We only need to check courses that share at least one index with query?
+            // For 10k courses, brute force dot product is basically instant in JS.
+            // Optimization: Only iterate if needed, but 10k * 500 is small.
+            // Sparse Dot Product: Query has few ones.
+
+            const scores = syllabusData.courses.map(course => {
+                const vec = course.vector;
+                let dotProduct = 0;
+                let normA = 0; // Query (Active indices count) -> sqrt(count) if all 1s
+                let normB = 0; // Course vector norm (Can be precalculated, but let's do on fly)
+
+                // Dot Product: Only iterate query indices
+                for (let idx of queryIndices) {
+                    if (vec[idx] > 0) {
+                        dotProduct += vec[idx]; // Assuming query weight is 1
+                    }
+                }
+
+                // If no overlap, score is 0
+                if (dotProduct === 0) return { ...course, score: 0 };
+
+                // Norm Calculation
+                // Query Norm: sqrt(number of query words found) assuming binary 1 vector
+                normA = Math.sqrt(queryIndices.length);
+
+                // Course Norm: sum(val^2)
+                // Optimization: Pre-calculate norms in Python would be better, but loop is fast enough
+                for (let v of vec) {
+                    normB += v * v;
+                }
+                normB = Math.sqrt(normB);
+
+                const similarity = dotProduct / (normA * normB);
+                return { ...course, score: similarity };
+            });
+
+            // C. Sort
+            scores.sort((a, b) => b.score - a.score);
+            const topResults = scores.slice(0, 10).filter(c => c.score > 0);
+
+            const endTime = performance.now();
+            showResults(topResults, endTime - startTime);
+        }
+
+        function showResults(results, timeTaken, message) {
+            const resultsDiv = document.getElementById('results');
+            if (results.length > 0 || message) {
+                document.body.classList.add('has-results');
+                resultsDiv.style.display = 'block';
+            } else {
+                return;
+            }
+
+            let html = `<div class="result-stats">${results.length} results (${timeTaken.toFixed(2)} ms)</div>`;
+
+            if (message) {
+                html += `<div style="padding:10px; color:#666;">${message}</div>`;
+            }
+
+            results.forEach(c => {
+                html += `
                     <div class="course-card">
-                        <span class="score">一致度: ${(c.score * 100).toFixed(1)}%</span> 
-                        ${c.name} (ID: ${c.id})
-                    </div>`;
+                        <div class="course-meta">ID: ${c.id}</div>
+                        <a class="course-title" onclick="alert('Course ID: ${c.id}')">${c.name}</a>
+                        <div class="match-score">Match: ${(c.score * 100).toFixed(1)}%</div>
+                        <div class="course-snippet">
+                           Relevant Keywords matched based on vector analysis.
+                        </div>
+                    </div>
+                `;
             });
+
+            resultsDiv.innerHTML = html;
         }
     </script>
 </body>
+
 </html>
