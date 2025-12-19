@@ -378,12 +378,26 @@
                         <option value="stem">STEM (Science, Tech, Math)</option>
                         <option value="humanities">Humanities (Art, History, Lit)</option>
                         <option value="social">Social Sciences (Econ, Law, Edu)</option>
-                    </select>
+                        <select id="aiFocus" class="filter-select" style="margin-bottom:0;">
+                            <option value="">No Preference (General)</option>
+                            <option value="stem">STEM (Science, Tech, Math)</option>
+                            <option value="humanities">Humanities (Art, History, Lit)</option>
+                            <option value="social">Social Sciences (Econ, Law, Edu)</option>
+                        </select>
 
-                    <button onclick="runAiSearch()" class="add-btn"
-                        style="background:var(--primary); color:white; margin-top:5px;">
-                        ✨ Update Recommendations
-                    </button>
+                        <label style="font-size:0.85rem; font-weight:bold; color:var(--text-sub);">4. Category
+                            Filter</label>
+                        <select id="aiArea" class="filter-select" style="margin-bottom:4px;">
+                            <option value="">All Areas (領域)</option>
+                        </select>
+                        <select id="aiField" class="filter-select" style="margin-bottom:0;">
+                            <option value="">All Fields (分野)</option>
+                        </select>
+
+                        <button onclick="runAiSearch()" class="add-btn"
+                            style="background:var(--primary); color:white; margin-top:5px;">
+                            ✨ Update Recommendations
+                        </button>
                 </div>
                 <div id="ai-results"></div>
             </div>
@@ -392,6 +406,12 @@
             <div id="panel-filter" class="search-content">
                 <select id="f-dept" class="filter-select">
                     <option value="">All Departments</option>
+                </select>
+                <select id="f-area" class="filter-select">
+                    <option value="">All Areas (領域)</option>
+                </select>
+                <select id="f-field" class="filter-select">
+                    <option value="">All Fields (分野)</option>
                 </select>
                 <select id="f-term" class="filter-select">
                     <option value="">Any Term</option>
@@ -441,7 +461,10 @@
 
                 document.getElementById('loading-screen').style.display = 'none';
 
+                document.getElementById('loading-screen').style.display = 'none';
+
                 populateFilterDepts();
+                populateFilterCategories(); // Add this
                 renderScheduleGrid();
             } catch (e) {
                 document.getElementById('loading-screen').innerHTML = `<p style="color:red">Loading Error: ${e.message}<br>Did you run preprocess001.py?</p>`;
@@ -603,9 +626,38 @@
             });
         }
 
+        function populateFilterCategories() {
+            const areas = new Set();
+            const fields = new Set();
+            for (let id in detailsData) {
+                if (detailsData[id].a && detailsData[id].a !== "その他") areas.add(detailsData[id].a);
+                if (detailsData[id].f) fields.add(detailsData[id].f);
+            }
+
+            // Populate Areas (for both AI and Filter panels)
+            ['aiArea', 'f-area'].forEach(eid => {
+                const sel = document.getElementById(eid);
+                Array.from(areas).sort().forEach(a => {
+                    const opt = document.createElement('option');
+                    opt.value = a; opt.innerText = a; sel.appendChild(opt);
+                });
+            });
+
+            // Populate Fields (for both AI and Filter panels)
+            ['aiField', 'f-field'].forEach(eid => {
+                const sel = document.getElementById(eid);
+                Array.from(fields).sort().forEach(f => {
+                    const opt = document.createElement('option');
+                    opt.value = f; opt.innerText = f; sel.appendChild(opt);
+                });
+            });
+        }
+
         // --- FILTER SEARCH ---
         window.runFilterSearch = function () {
             const dept = document.getElementById('f-dept').value;
+            const area = document.getElementById('f-area').value;
+            const field = document.getElementById('f-field').value;
             const term = document.getElementById('f-term').value;
             const day = document.getElementById('f-day').value;
             const kw = document.getElementById('f-kw').value.toLowerCase();
@@ -616,6 +668,8 @@
                 const c = detailsData[id];
                 // c structure: { n, d, t, w, i }
                 if (dept && c.d !== dept) continue;
+                if (area && c.a !== area) continue;
+                if (field && c.f !== field) continue;
                 if (term && !c.t.includes(term)) continue;
                 if (day && !c.w.includes(day)) continue;
                 if (kw) {
@@ -652,8 +706,8 @@
 
             if (boostKeywords) finalText += " " + boostKeywords;
 
-            if (!finalText.trim()) {
-                document.getElementById('ai-results').innerHTML = '<div style="color:#777;padding:10px;">Please enter some interests or career goals.</div>';
+            if (!finalText.trim() && !document.getElementById('aiArea').value && !document.getElementById('aiField').value) {
+                document.getElementById('ai-results').innerHTML = '<div style="color:#777;padding:10px;">Please enter some interests or career goals, or select a category.</div>';
                 return;
             }
 
@@ -665,6 +719,11 @@
             const courses = vectorData.d; // List of [[indices], [values]]
             const courseIds = vectorData.i; // List of IDs
 
+            // Get Filters
+            const filterArea = document.getElementById('aiArea').value;
+            const filterField = document.getElementById('aiField').value;
+
+            // ... (rest is calculation)
             const queryIndices = [];
             Array.from(segmenter.segment(query)).filter(x => x.isWordLike).forEach(w => {
                 if (vocab[w.segment] !== undefined) queryIndices.push(vocab[w.segment]);
@@ -693,12 +752,35 @@
                     }
                 }
 
-                if (dot > 0) {
+                if (dot > 0 || (currentTerm && query.trim() == "")) { // Allow match if filtered even if dot is 0? No, vector search needs query. 
+                    // Wait, if user ONLY selects "Area" but no text, dot will be 0.
+                    // If text is empty, we generally want to return all matching the filter?
+                    // Sparse search usually requires a query. 
+                    // Let's implement strict filtering:
+
+                    const meta = detailsData[courseIds[i]];
+                    if (filterArea && meta.a !== filterArea) continue;
+                    if (filterField && meta.f !== filterField) continue;
+
                     let normC = Math.sqrt(sumSq);
                     scores.push({
                         id: courseIds[i],
                         score: dot / (queryNorm * normC)
                     });
+                }
+            }
+
+            // If query is empty but filters are set, we should ideally show all matching filters.
+            // But this vector search function relies on dot product.
+            // Fix: If query is empty strings, skip vector calc and just filter.
+            if (!query.trim()) {
+                scores.length = 0;
+                for (let i = 0; i < courses.length; i++) {
+                    const cid = courseIds[i];
+                    const meta = detailsData[cid];
+                    if (filterArea && meta.a !== filterArea) continue;
+                    if (filterField && meta.f !== filterField) continue;
+                    scores.push({ id: cid, score: 0 });
                 }
             }
 
