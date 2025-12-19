@@ -25,7 +25,7 @@ import sys
 plt.rcParams['font.family'] = 'MS Gothic'
 
 # 1. データの準備（JSONから読み込み）
-json_path = 'subject_details_main_2025-04-03.json'
+json_path = 'integrated_arts_courses.json'
 try:
     with open(json_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
@@ -35,16 +35,17 @@ except FileNotFoundError:
 
 courses = []
 for course_id, details in data.items():
-    # 総合科学部のみ抽出
-    if details.get("開講部局") == "総合科学部":
-        title = details.get("授業科目名", "不明")
-        text = details.get("授業の目標・概要等", "")
-        if text:
-            courses.append({
-                "id": course_id,
-                "title": title,
-                "text": text
-            })
+    # 抽出済みファイルなので部局フィルタは不要（または全許可）
+    title = details.get("授業科目名", "不明")
+    text = details.get("授業の目標・概要等", "")
+    field = details.get("分野", "未分類") # Get field
+    if text:
+        courses.append({
+            "id": course_id,
+            "title": title,
+            "text": text,
+            "field": field
+        })
 
 print(f"分析対象の授業数: {len(courses)}")
 
@@ -58,21 +59,27 @@ vectorizer = TfidfVectorizer()
 tfidf_matrix = vectorizer.fit_transform(texts)
 similarity_matrix = cosine_similarity(tfidf_matrix)
 
-# クラスタリング（K-Means）
-num_clusters = 5
-kmeans = KMeans(n_clusters=num_clusters, random_state=42)
-kmeans.fit(tfidf_matrix)
-labels = kmeans.labels_
-# 各コースにラベルを割り当て
-for i, course in enumerate(courses):
-    course["group"] = labels[i]
+# 分野ごとの色分け設定
+# 分野リストを取得
+unique_fields = list(set([c["field"] for c in courses]))
+unique_fields.sort()
+print("Fields found:", unique_fields)
+
+# 色のマップを作成 (tab20などを使用)
+import matplotlib.cm as cm
+import numpy as np
+
+# Apply colors based on field index
+field_to_id = {f: i for i, f in enumerate(unique_fields)}
+for c in courses:
+    c["group"] = field_to_id[c["field"]]
 
 # 3. グラフ（ネットワーク）の生成
 G = nx.Graph()
 
 # ノード（授業）を追加
 for course in courses:
-    G.add_node(course["title"], group=course["group"])
+    G.add_node(course["title"], group=course["group"], field=course["field"])
 
 # エッジ（線）を追加：類似度が「0.1以上」なら線を引く
 threshold = 0.1
@@ -102,8 +109,8 @@ y_nodes = [pos[node][1] for node in G.nodes()]
 z_nodes = [pos[node][2] for node in G.nodes()]
 node_colors = [G.nodes[node]['group'] for node in G.nodes()]
 
-# 点（ノード）を描画（色分け）
-scatter = ax.scatter(x_nodes, y_nodes, z_nodes, s=100, c=node_colors, cmap='Set1', alpha=0.9, edgecolors="gray")
+# 点（ノード）を描画（色分け） - tab20を使用
+scatter = ax.scatter(x_nodes, y_nodes, z_nodes, s=50, c=node_colors, cmap='tab20', alpha=0.9, edgecolors="gray")
 
 # 線（エッジ）を描画
 for u, v in G.edges():
@@ -113,22 +120,32 @@ for u, v in G.edges():
     
     # 重みに応じた太さ
     weight = G[u][v]['weight']
-    ax.plot(x_coords, y_coords, z_coords, color="gray", alpha=0.3, linewidth=weight * 3)
+    ax.plot(x_coords, y_coords, z_coords, color="gray", alpha=0.2, linewidth=weight * 2)
 
-# ラベル（授業名）を描画
-for node, (x, y, z) in pos.items():
-    ax.text(x, y, z, node, fontsize=8, fontname="MS Gothic", alpha=0.8)
+# ラベル（授業名）を描画 - 削除 (Requested by user)
+# for node, (x, y, z) in pos.items():
+#     ax.text(x, y, z, node, fontsize=8, fontname="MS Gothic", alpha=0.8)
 
-ax.set_title("総合科学部 授業相関ネットワーク (3D)", fontsize=15, fontname="MS Gothic")
+ax.set_title("総合科学部 授業相関ネットワーク (3D) - 色: 分野", fontsize=15, fontname="MS Gothic")
 
 # 軸ラベルの設定
 ax.set_xlabel('X Axis')
 ax.set_ylabel('Y Axis')
 ax.set_zlabel('Z Axis')
 
-# 凡例（カラーバー）の追加（簡易的）
-cbar = plt.colorbar(scatter, ax=ax, pad=0.1)
-cbar.set_label('Cluster Group')
+# 凡例（カラーバーではなく凡例リストにする）
+# Create custom legend handles
+from matplotlib.lines import Line2D
+cmap = plt.get_cmap('tab20')
+legend_elements = []
+for i, field_name in enumerate(unique_fields):
+    if not field_name: field_name = "未分類"
+    # Choose color from map
+    color = cmap(i / max(1, len(unique_fields) - 1)) if len(unique_fields) > 1 else cmap(0)
+    legend_elements.append(Line2D([0], [0], marker='o', color='w', label=field_name,
+                          markerfacecolor=color, markersize=10))
+
+ax.legend(handles=legend_elements, title="分野", loc="upper right", prop={"family": "MS Gothic", "size": 8})
 
 print("3Dグラフを表示します。マウスで回転できます。")
 plt.show()
