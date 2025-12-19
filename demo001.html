@@ -718,8 +718,9 @@
                 <div class="course-card">
                     <div class="course-title" onclick="alert('${c.id}\\n${c.n}')">${c.n}</div>
                     <div class="course-meta">
-                        ${c.d} | ${c.i}<br>
-                        ${c.w}
+                        <span style="font-weight:600; color:#333;">${c.d}</span><br>
+                        <span style="color:#0d652d;">Area: ${c.a || '-'} / Field: ${c.f || '-'}</span><br>
+                        ${c.i} | ${c.w}
                     </div>
                     ${showScore ? `<div style="font-size:0.8rem;color:#d93025;font-weight:bold;">${(c.score * 100).toFixed(0)}% Match</div>` : ''}
                     <button class="add-btn btn-${c.id} ${added ? 'added' : ''}" 

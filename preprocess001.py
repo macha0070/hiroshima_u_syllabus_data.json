@@ -18,7 +18,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 # ==========================================
 # 設定
 # ==========================================
-input_file = "subject_details_main_2025-04-03.json"
+input_file = "integrated_arts_courses.json"
 output_file = "syllabus_vectors.json" # この中にベクトルと辞書を両方入れます
 
 # ==========================================
@@ -128,7 +128,9 @@ for i, cid in enumerate(course_ids):
         "d": raw.get("開講部局", ""),         # Dept
         "t": raw.get("開設期", ""),           # Term
         "w": raw.get("曜日・時限・講義室", ""), # When/Where
-        "i": raw.get("担当教員名", "")        # Instructor
+        "i": raw.get("担当教員名", ""),       # Instructor
+        "a": raw.get("領域", ""),             # Area
+        "f": raw.get("分野", "")              # Field
     }
 
 with open(metadata_file, "w", encoding="utf-8") as f:
