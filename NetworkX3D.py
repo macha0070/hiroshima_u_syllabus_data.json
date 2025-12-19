@@ -1,3 +1,17 @@
+"""
+NetworkX3D.py
+=============
+シラバスデータ（JSON）を読み込み、TF-IDFとK-Meansクラスタリングを用いて授業をグループ化し、
+NetworkXとMatplotlib (mplot3d) を使用して3次元の相関ネットワークグラフを描画するスクリプトです。
+
+主な機能:
+1. JSONデータのロードとフィルタリング（総合科学部のみ）
+2. テキストのTF-IDFベクトル化とコサイン類似度計算
+3. K-Means法による授業のクラスタリング（色分け用）
+4. NetworkXによる3次元配置座標の計算 (spring_layout dim=3)
+5. 3D散布図としてのノード描画とエッジの描画
+6. マウス操作可能な3Dグラフの表示
+"""
 import json
 import networkx as nx
 import matplotlib.pyplot as plt

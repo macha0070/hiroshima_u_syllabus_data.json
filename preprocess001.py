@@ -1,3 +1,16 @@
+"""
+preprocess001.py
+================
+シラバスのJSONデータを読み込み、形態素解析（Janome）を行って名詞を抽出し、
+TF-IDFベクトル化を行って検索用のベクトルデータを作成する前処理スクリプトです。
+
+主な機能:
+1. `subject_details_main_2025-04-03.json` のロード
+2. Janomeによる日本語形態素解析と名詞抽出（分かち書き）
+3. Scikit-learnによるTF-IDFベクトル化（上位500語）
+4. 疎行列データの圧縮と整形
+5. ベクトルデータ (`syllabus_vectors.json`) とメタデータ (`course_metadata.json`) の保存
+"""
 import json
 from janome.tokenizer import Tokenizer
 from sklearn.feature_extraction.text import TfidfVectorizer
