@@ -363,7 +363,28 @@
 
             <!-- AI Search Panel -->
             <div id="panel-ai" class="search-content active">
-                <input type="text" id="aiInput" class="search-input" placeholder="Describe your interests...">
+                <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:10px;">
+                    <label style="font-size:0.85rem; font-weight:bold; color:var(--text-sub);">1. Interests</label>
+                    <input type="text" id="aiInput" class="search-input" placeholder="e.g. AI, History, Sports..."
+                        style="margin-bottom:0;">
+
+                    <label style="font-size:0.85rem; font-weight:bold; color:var(--text-sub);">2. Career Goal</label>
+                    <input type="text" id="aiCareer" class="search-input"
+                        placeholder="e.g. Teacher, Engineer, Global Leader..." style="margin-bottom:0;">
+
+                    <label style="font-size:0.85rem; font-weight:bold; color:var(--text-sub);">3. Focus Area</label>
+                    <select id="aiFocus" class="filter-select" style="margin-bottom:0;">
+                        <option value="">No Preference (General)</option>
+                        <option value="stem">STEM (Science, Tech, Math)</option>
+                        <option value="humanities">Humanities (Art, History, Lit)</option>
+                        <option value="social">Social Sciences (Econ, Law, Edu)</option>
+                    </select>
+
+                    <button onclick="runAiSearch()" class="add-btn"
+                        style="background:var(--primary); color:white; margin-top:5px;">
+                        ✨ Update Recommendations
+                    </button>
+                </div>
                 <div id="ai-results"></div>
             </div>
 
@@ -608,11 +629,36 @@
         }
 
         // --- AI SEARCH (SPARSE) ---
-        document.getElementById('aiInput').addEventListener('input', (e) => {
-            const q = e.target.value.trim();
-            if (!q) { document.getElementById('ai-results').innerHTML = ''; return; }
-            performSparseVectorSearch(q);
-        });
+        // Removed auto-event listener for simple input to favor button click for multi-input
+
+        function runAiSearch() {
+            const interest = document.getElementById('aiInput').value.trim();
+            const career = document.getElementById('aiCareer').value.trim();
+            const focus = document.getElementById('aiFocus').value;
+
+            // Synthesis of text
+            let finalText = interest;
+            if (career) finalText += " " + career;
+
+            // Keyword Boosting
+            let boostKeywords = "";
+            if (focus === "stem") {
+                boostKeywords = "Math Science Experiment Data Analysis Physics Chemistry Biology Programming Technology Integeral Differential";
+            } else if (focus === "humanities") {
+                boostKeywords = "History Literature Culture Art Philosophy Language Thought Religion";
+            } else if (focus === "social") {
+                boostKeywords = "Society Economics Law Media Politics Education Psychology Management Peace";
+            }
+
+            if (boostKeywords) finalText += " " + boostKeywords;
+
+            if (!finalText.trim()) {
+                document.getElementById('ai-results').innerHTML = '<div style="color:#777;padding:10px;">Please enter some interests or career goals.</div>';
+                return;
+            }
+
+            performSparseVectorSearch(finalText);
+        }
 
         function performSparseVectorSearch(query) {
             const vocab = vectorData.v; // Dictionary
