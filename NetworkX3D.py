@@ -20,6 +20,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.cluster import KMeans
 import sys
+from preprocess001 import get_words
 
 # 日本語フォント設定（Windows向け/MS Gothic）
 plt.rcParams['font.family'] = 'MS Gothic'
@@ -54,7 +55,9 @@ if len(courses) == 0:
     sys.exit(0)
 
 # 2. 類似度の計算（TF-IDFを使用）
-texts = [c["text"] for c in courses]
+# preprocess001.py の get_words を使用して日本語形態素解析を行う
+print("テキストをトークン化中...")
+texts = [get_words(c["text"]) for c in courses]
 vectorizer = TfidfVectorizer()
 tfidf_matrix = vectorizer.fit_transform(texts)
 similarity_matrix = cosine_similarity(tfidf_matrix)
@@ -81,11 +84,13 @@ G = nx.Graph()
 for course in courses:
     G.add_node(course["title"], group=course["group"], field=course["field"])
 
-# エッジ（線）を追加：類似度が「0.1以上」なら線を引く
-threshold = 0.1
+# エッジ（線）を追加：類似度が「0.2以上」なら線を引く
+# 閾値を上げることで、クラスターをより明確にする (0.1 -> 0.2)
+threshold = 0.2
 num_courses = len(courses)
 
 edge_list = []
+print(f"エッジ生成中... (閾値: {threshold})")
 for i in range(num_courses):
     for j in range(i + 1, num_courses):
         sim = similarity_matrix[i][j]
@@ -95,10 +100,19 @@ for i in range(num_courses):
             edge_list.append((courses[i]["title"], courses[j]["title"], sim))
 
 print(f"エッジの数: {len(edge_list)}")
+print(f"グラフ密度: {nx.density(G):.4f}")
+
+# 孤立ノードを削除するかどうかのオプション（今回は残す）
+# G.remove_nodes_from(list(nx.isolates(G)))
 
 # 4. 可視化（3D描画）の設定
 # 3次元配置を計算 (dim=3)
-pos = nx.spring_layout(G, k=0.8, dim=3)
+# k値を調整: ノード数が多い場合は少し大きめに取るか、反比例させる
+# デフォルトは 1/sqrt(N)
+k_val = 2.0 / (num_courses ** 0.5) 
+print(f"Spring Layout k値: {k_val:.4f}")
+
+pos = nx.spring_layout(G, k=k_val, dim=3, seed=42) # seedを固定して再現性を確保
 
 fig = plt.figure(figsize=(12, 10))
 ax = fig.add_subplot(111, projection='3d')

@@ -305,6 +305,49 @@
                 transform: rotate(360deg);
             }
         }
+
+        /* MODAL */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 200;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: var(--surface);
+            margin: 10% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 600px;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .close-modal {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-modal:hover {
+            color: black;
+        }
+
+        .related-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 15px;
+        }
     </style>
 </head>
 
@@ -433,6 +476,17 @@
             </div>
         </div>
     </div>
+    </div>
+
+    <!-- MODAL -->
+    <div id="related-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <h2 id="modal-title" style="margin-top:0;">Related Courses</h2>
+            <p id="modal-desc" style="color:var(--text-sub); font-size:0.9rem;"></p>
+            <div id="related-container" class="related-list"></div>
+        </div>
+    </div>
 
     <script>
         // --- DATA & STATE ---
@@ -440,6 +494,7 @@
         // detailsData: { "ID": { n, d, t, w, i } }
         let vectorData = null;
         let detailsData = null;
+        let recommendations = null;
         let mySchedule = new Set();
         let currentTerm = 1;
 
@@ -452,12 +507,14 @@
 
             try {
                 // FETCH OPTIMIZED FILES
-                const [vRes, dRes] = await Promise.all([
+                const [vRes, dRes, rRes] = await Promise.all([
                     fetch('syllabus_vectors.json'),
-                    fetch('course_metadata.json')
+                    fetch('course_metadata.json'),
+                    fetch('recommendations.json')
                 ]);
                 vectorData = await vRes.json();
                 detailsData = await dRes.json();
+                try { recommendations = await rRes.json(); } catch (e) { console.warn("No recs found"); }
 
                 document.getElementById('loading-screen').style.display = 'none';
 
@@ -798,13 +855,12 @@
                 // Schema: n=name, d=dept, t=term, w=when, i=instructor
                 html += `
                 <div class="course-card">
-                    <div class="course-title" onclick="alert('${c.id}\\n${c.n}')">${c.n}</div>
+                    <div class="course-title" onclick="toggleCourse('${c.id}')">${c.n}</div>
                     <div class="course-meta">
-                        <span style="font-weight:600; color:#333;">${c.d}</span><br>
-                        <span style="color:#0d652d;">Area: ${c.a || '-'} / Field: ${c.f || '-'}</span><br>
-                        ${c.i} | ${c.w}
+                        ${c.d} | ${c.t}<br>
+                        ${c.w} | ${c.i}<br>
+                        ${c.a} | ${c.f}
                     </div>
-                    ${showScore ? `<div style="font-size:0.8rem;color:#d93025;font-weight:bold;">${(c.score * 100).toFixed(0)}% Match</div>` : ''}
                     <button class="add-btn btn-${c.id} ${added ? 'added' : ''}" 
                         data-id="${c.id}"
                         onclick="toggleCourse('${c.id}')">
