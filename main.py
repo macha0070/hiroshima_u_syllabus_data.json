@@ -1,3 +1,16 @@
+# ==========================================
+# Script Name: main.py
+# Description:
+#   [EN] Web scraper for Hiroshima University syllabus data (Momiji).
+#        Fetches HTML pages by course code and extracts syllabus details.
+#   [JP] 広島大学のシラバスデータ（Momiji）用ウェブスクレイパー。
+#        科目コードごとにHTMLページを取得し、シラバスの詳細情報を抽出します。
+#
+# Data Flow:
+#   Input  : (Web URL) https://momiji.hiroshima-u.ac.jp/...
+#   Output : hiroshima_u_syllabus_data.json
+# ==========================================
+
 import requests
 from bs4 import BeautifulSoup
 import json
@@ -6,6 +19,7 @@ import re
 
 # ==========================================
 # 設定セクション
+# スクレイピングするだけのファイル
 # ==========================================
 
 # ベースとなるURL（共通部分）

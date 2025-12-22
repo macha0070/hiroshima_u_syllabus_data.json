@@ -1,30 +1,24 @@
 """
-preprocess001.py
+preprocess002.py
 ================
-シラバスのJSONデータを読み込み、形態素解析（Janome）を行って名詞を抽出し、
-TF-IDFベクトル化を行って検索用のベクトルデータを作成する前処理スクリプトです。
+preprocess001.py の機能に加え、正規表現による「前提知識（スキルタグ）」の自動抽出を行うスクリプトです。
+抽出されたスキルは `syllabus_vectors.json` の "skills" キーに出力されます。
 
 主な機能:
 1. JSONデータのロード
-2. テキストの正規化 (NFKC, ブラケット削除)
-3. Janomeによる日本語形態素解析と名詞抽出（分かち書き）
-4. Scikit-learnによるTF-IDFベクトル化（上位500語）
-5. 疎行列データの圧縮と整形
-6. ベクトルデータ (`syllabus_vectors.json`) とメタデータ (`course_metadata.json`) の保存
-7. 類似授業データの計算と保存 (`recommendations.json`)
+2. テキストの正規化
+3. Janomeによる形態素解析とTF-IDFベクトル化
+4. **[NEW] 正規表現によるスキルタグ抽出 (Grade/Welcome ルール適用)**
+5. ベクトルデータとメタデータの保存
 """
 # ==========================================
-# Script Name: preprocess001.py
+# Script Name: preprocess002.py
 # Description:
-#   [EN] Basic preprocessing script for syllabus data.
-#        Performs morphological analysis, vectorization, and generates metadata.
-#        Does NOT include the advanced skill extraction of preprocess002.py.
-#   [JP] シラバスデータの基本的な前処理スクリプト。
-#        形態素解析、ベクトル化、メタデータの生成を行います。
-#        preprocess002.pyのような高度なスキル抽出機能は含まれていません。
+#   [EN] Syllabus text analysis and vectorization script. Extracts skills, filters by grade, and generates sparse vectors.
+#   [JP] シラバスのテキスト分析およびベクトル化スクリプト。スキルの抽出、学年によるフィルタリング、疎ベクトルの生成を行います。
 #
 # Data Flow:
-#   Input  : reduced_integrated_arts_courses.json
+#   Input  : reduced_integrated_arts_courses.json (or integrated_arts_courses.json)
 #   Output : syllabus_vectors.json
 #          : course_metadata.json
 #          : recommendations.json
@@ -41,13 +35,30 @@ from sklearn.metrics.pairwise import cosine_similarity
 # ==========================================
 # 設定
 # ==========================================
-# デモ用に軽量なファイルを使用する場合はこちら
 input_file = "integrated_arts_courses.json"
-# input_file = "subject_details_main_2025-04-03.json" # 全データを使う場合
+# input_file = "subject_details_main_2025-04-03.json"
 
-output_file = "syllabus_vectors.json" # ベクトルデータ
-metadata_file = "course_metadata.json" # メタデータ
-recommendation_file = "recommendations.json" # おすすめ授業データ
+output_file = "syllabus_vectors.json"
+metadata_file = "course_metadata.json"
+recommendation_file = "recommendations.json"
+
+# ==========================================
+# スキル抽出用 定義
+# ==========================================
+SKILL_PATTERNS = {
+    "math_basic": r'(数学I|数学A|数I|数A|基礎計算|四則演算)',
+    "math_adv": r'(数学II|数学B|数II|数B|数学III|数III|微分|積分|線形代数|解析学)',
+    "stats": r'(統計|確率|検定|データ分析|回帰分析|SPSS|R言語)',
+    "programming": r'(プログラミング|Python|C言語|Java|アルゴリズム|実装)',
+    "reading": r'(英語|English|論文購読|原書|TOEIC)',
+    "report": r'(レポート|小論文|アカデミックライティング)'
+}
+
+# Advanced topics to filter out for 1st graders
+ADVANCED_SKILLS = ["math_adv", "stats", "programming"]
+
+# Patterns that indicate "No prerequisites" / "Welcome all"
+WELCOME_PATTERN = r'(文系|初心者|初学者|学部・学科|全学部|誰でも|意欲).*?(歓迎|問わない|対象|受講可能)'
 
 # ==========================================
 # データの読み込み
@@ -66,60 +77,80 @@ except FileNotFoundError:
 t = Tokenizer()
 
 def normalize_text(text):
-    """
-    テキストの正規化を行う
-    1. NFKC正規化 (全角英数→半角, など)
-    2. 不要な空白の削除
-    """
     if not text:
         return ""
     normalized = unicodedata.normalize('NFKC', text)
     return normalized.strip()
 
 def clean_course_name(name):
-    """
-    授業名から [1総総] などの分類タグを削除する
-    """
     if not name:
         return ""
-    # [1総総,1文...] のようなパターンを削除
-    # 貪欲マッチにならないように注意
     cleaned = re.sub(r'\[.*?\]', '', name)
     return cleaned.strip()
 
 def get_words(text):
-    """
-    形態素解析して名詞リスト（スペース区切り）を返す
-    """
-    # 正規化してから解析
     text = normalize_text(text)
     tokens = t.tokenize(text)
     words = []
     for token in tokens:
-        # 名詞だけに絞る
         if token.part_of_speech.split(',')[0] in ['名詞']:
             words.append(token.base_form)
     return " ".join(words)
 
+def extract_skills(text, grade_year):
+    """
+    テキストからスキルを抽出し、年次やWelcomeメッセージに基づいてフィルタリングする
+    """
+    detected_skills = []
+    
+    # 1. Check for Welcome Pattern (Clear all if found)
+    if re.search(WELCOME_PATTERN, text):
+        return []
+
+    # 2. Extract Skills by Regex
+    for skill_key, pattern in SKILL_PATTERNS.items():
+        if re.search(pattern, text):
+            detected_skills.append(skill_key)
+            
+    # 3. Grade Filter (If 1st year, remove advanced skills)
+    # 1年次はこれらを「学ぶ」のであって「前提」ではないと仮定
+    if grade_year == 1:
+        detected_skills = [s for s in detected_skills if s not in ADVANCED_SKILLS]
+        
+    return list(set(detected_skills)) # Unique
+
+def get_grade(term_str):
+    """
+    開設期文字列から年次を抽出。見つからない場合はデフォルトで1とする。
+    例: "2年次生 前期" -> 2
+    """
+    if not term_str:
+        return 1
+    match = re.search(r'(\d+)年次', term_str)
+    if match:
+        return int(match.group(1))
+    return 1
+
 # ==========================================
-# メイン処理: テキスト抽出
+# メイン処理
 # ==========================================
 def main():
-    print("形態素解析と正規化を実行中...")
+    print("形態素解析とスキル抽出を実行中...")
     corpus = []
     course_ids = []
+    all_skills_data = [] # List of lists
 
-    # 生成されるメタデータをここで準備
     metadata_map = {}
 
     for code_key, info in syllabus_data.items():
         if not isinstance(info, dict): continue
 
-        # 元データ取得 & 正規化
+        # --- Data Prep ---
         raw_name = str(info.get("授業科目名", ""))
-        norm_name = normalize_text(raw_name)     # 正規化のみ
-        clean_name = clean_course_name(norm_name) # 表示用にタグ削除
-
+        norm_name = normalize_text(raw_name)
+        clean_name = clean_course_name(norm_name)
+        
+        # Combined Text for NLP & Skill Extraction
         target_text = (
             clean_name + " " +
             str(info.get("授業の目標・概要等", "")) + " " +
@@ -127,16 +158,19 @@ def main():
             str(info.get("履修上の注意 受講条件等", ""))
         )
         
+        # --- 1. TF-IDF Prep ---
         words = get_words(target_text)
-        # 単語がなくてもメタデータとしては登録すべき（検索にはヒットしないがグリッドには出るかも）
-        # しかしベクトル化の都合上、corpusとidsは同期が必要。空文字列でもcorpusに追加する。
-        
         corpus.append(words)
         course_ids.append(code_key)
 
-        # メタデータ構築
+        # --- 2. Skill Extraction ---
+        grade = get_grade(str(info.get("開設期", "")))
+        skills = extract_skills(target_text, grade)
+        all_skills_data.append(skills)
+
+        # --- 3. Metadata Prep ---
         metadata_map[code_key] = {
-            "n": clean_name,                        # Name (Cleaned)
+            "n": clean_name,
             "d": normalize_text(info.get("開講部局", "")),
             "t": normalize_text(info.get("開設期", "")),
             "w": normalize_text(info.get("曜日・時限・講義室", "")),
@@ -149,85 +183,61 @@ def main():
     # ベクトル化 (TF-IDF)
     # ==========================================
     print("ベクトル化中...")
-
-    # max_features=500: 上位500語
     vectorizer = TfidfVectorizer(max_features=500)
     X = vectorizer.fit_transform(corpus)
 
-    # 疎行列から非ゼロ要素のみ抽出 (Sparse Format)
     print("データを圧縮中...")
     sparse_vectors = []
     for i in range(X.shape[0]):
         row = X.getrow(i)
         indices = row.indices.tolist()
         data = row.data.tolist()
-        # 小数点以下3桁に丸める
         data_rounded = [round(v, 3) for v in data]
-        
-        # [ [indices], [values] ]
         sparse_vectors.append([indices, data_rounded])
 
-    # 語彙辞書
     vocabulary = {k: int(v) for k, v in vectorizer.vocabulary_.items()}
 
     # ==========================================
-    # 保存 1: ベクトルデータ (検索用)
+    # 保存 1: ベクトルデータ (検索用) + Skills
     # ==========================================
     output_vector_data = {
         "v": vocabulary,
         "d": sparse_vectors,
-        "i": course_ids
+        "i": course_ids,
+        "skills": all_skills_data  # <--- Added
     }
 
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(output_vector_data, f, ensure_ascii=False, separators=(',', ':'))
 
-    print(f"完了！ '{output_file}' (ベクトルデータ) を保存しました。")
-
+    print(f"完了！ '{output_file}' (ベクトルデータ+スキル) を保存しました。")
 
     # ==========================================
     # 保存 2: メタデータ (表示用)
     # ==========================================
     with open(metadata_file, "w", encoding="utf-8") as f:
         json.dump(metadata_map, f, ensure_ascii=False, separators=(',', ':'))
-
-    print(f"完了！ '{metadata_file}' (メタデータ) を保存しました。")
-
+    print(f"完了！ '{metadata_file}' を保存しました。")
 
     # ==========================================
-    # 保存 3: 類似授業 (おすすめ用)
+    # 保存 3: 類似授業
     # ==========================================
     print("類似度を計算中...")
     sim_matrix = cosine_similarity(X, X)
-
     recommendations = {}
     top_k = 5
 
     for i in range(len(course_ids)):
-        # 自分自身の類似度は1.0なので除外するためにコピーをとるか、indexを除外する
         scores = sim_matrix[i]
-        # 自分自身を -1 に設定して選ばれないようにする
         scores[i] = -1
-        
-        # 降順ソートして上位K個のインデックスを取得
-        # argsortは昇順なので、[::-1]で反転
         top_indices = scores.argsort()[::-1][:top_k]
-        
-        # スコアが0より大きいものだけ選ぶ (全く関係ないものはおすすめしない)
         filtered_indices = [idx for idx in top_indices if scores[idx] > 0]
-        
-        # IDのリストに変換
         recommended_ids = [course_ids[idx] for idx in filtered_indices]
-        
         recommendations[course_ids[i]] = recommended_ids
 
     with open(recommendation_file, "w", encoding="utf-8") as f:
         json.dump(recommendations, f, ensure_ascii=False, separators=(',', ':'))
-
-    print(f"完了！ '{recommendation_file}' (おすすめデータ) を保存しました。")
-
-    print(f"処理対象: {len(course_ids)} 件")
-    print(f"語彙数: {len(vocabulary)}")
+    print(f"完了！ '{recommendation_file}' を保存しました。")
 
 if __name__ == "__main__":
     main()

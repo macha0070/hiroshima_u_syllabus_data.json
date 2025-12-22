@@ -1,16 +1,17 @@
-"""
-NetworkX.py
-===========
-シラバスデータ（JSON）を読み込み、TF-IDFとコサイン類似度を用いて授業間の類似度を計算し、
-NetworkXを使用して2次元の相関ネットワークグラフを描画するスクリプトです。
-
-主な機能:
-1. JSONデータのロードとフィルタリング（総合科学部のみ）
-2. テキスト（授業の目標・概要等）のTF-IDFベクトル化
-3. コサイン類似度の計算
-4. 類似度が閾値（0.1）以上の授業間にエッジを張る
-5. Matplotlibによる2Dネットワーク図の可視化
-"""
+# ==========================================
+# Script Name: NetworkX.py
+# Description:
+#   [EN] Visualizes course connectivity in 2D using NetworkX.
+#        Calculates TF-IDF and Cosine Similarity from raw JSON data.
+#        Filters for "School of Integrated Arts and Sciences" courses.
+#   [JP] NetworkXを使用して授業のつながりを2次元で可視化します。
+#        生のJSONデータからTF-IDFとコサイン類似度を計算します。
+#        「総合科学部」の授業のみをフィルタリングして使用します。
+#
+# Data Flow:
+#   Input  : subject_details_main_2025-04-03.json
+#   Output : (2D Plot Window / 2Dプロットウィンドウ)
+# ==========================================
 import networkx as nx
 import matplotlib.pyplot as plt
 from sklearn.feature_extraction.text import TfidfVectorizer

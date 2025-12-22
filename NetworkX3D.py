@@ -12,6 +12,19 @@ NetworkXとMatplotlib (mplot3d) を使用して3次元の相関ネットワー�
 5. 3D散布図としてのノード描画とエッジの描画
 6. マウス操作可能な3Dグラフの表示
 """
+# ==========================================
+# Script Name: NetworkX3D.py
+# Description:
+#   [EN] Visualizes course similarities in 3D using NetworkX and Matplotlib.
+#        Original version using direct TF-IDF calculation on integrated_arts_courses.json.
+#   [JP] NetworkXとMatplotlibを使用して授業の類似度を3次元で可視化します。
+#        integrated_arts_courses.jsonに対して直接TF-IDF計算を行うオリジナルバージョンです。
+#
+# Data Flow:
+#   Input  : reduced_integrated_arts_courses.json
+#   Output : (3D Plot Window / 3Dプロットウィンドウ)
+# ==========================================
+
 import json
 import networkx as nx
 import matplotlib.pyplot as plt
