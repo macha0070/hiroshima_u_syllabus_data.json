@@ -35,12 +35,14 @@ from sklearn.metrics.pairwise import cosine_similarity
 # ==========================================
 # 設定
 # ==========================================
-input_file = "../common_data/integrated_arts_courses.json"
-# input_file = "../common_data/subject_details_main_2025-04-03.json"
+import os
+base_dir = os.path.dirname(os.path.abspath(__file__))
+# Note: ".." traverses up one level from v2 to root, then into common_data
+input_file = os.path.join(base_dir, "../common_data/integrated_arts_courses.json")
 
-output_file = "syllabus_vectors.json"
-metadata_file = "course_metadata.json"
-recommendation_file = "recommendations.json"
+output_file = os.path.join(base_dir, "syllabus_vectors.json")
+metadata_file = os.path.join(base_dir, "course_metadata.json")
+recommendation_file = os.path.join(base_dir, "recommendations.json")
 
 # ==========================================
 # スキル抽出用 定義

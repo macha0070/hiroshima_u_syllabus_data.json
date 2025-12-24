@@ -31,6 +31,7 @@ import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 from sklearn.metrics.pairwise import cosine_similarity
+import os
 
 # Global references for interactivity
 scatters = {}
@@ -43,9 +44,14 @@ def main():
     # 1. Load Data
     print("Loading data...")
     try:
-        with open("syllabus_vectors.json", "r", encoding="utf-8") as f:
+        # Resolve paths relative to this script file
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        vector_path = os.path.join(base_dir, "syllabus_vectors.json")
+        metadata_path = os.path.join(base_dir, "course_metadata.json")
+        
+        with open(vector_path, "r", encoding="utf-8") as f:
             vector_data = json.load(f)
-        with open("course_metadata.json", "r", encoding="utf-8") as f:
+        with open(metadata_path, "r", encoding="utf-8") as f:
             metadata = json.load(f)
     except FileNotFoundError as e:
         print(f"Error loading files: {e}")

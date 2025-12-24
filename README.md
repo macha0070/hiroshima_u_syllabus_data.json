@@ -10,12 +10,14 @@ Contains the latest analysis logic, including 2D interactive graphs and improved
 - **Visualize (2D Interactive)**: `cd v2; python NetworkX2D002.py`
 - **Visualize (3D)**: `cd v2; python NetworkX3D002.py`
 - **Web Demo**: `v2/demo002.html`
+![V2 Visualization](images/v2_viz.png)
 
 ### `v1/` (Legacy)
 Previous version of the analysis.
 - **Run Analysis**: `cd v1; python preprocess001.py`
 - **Visualize**: `cd v1; python NetworkX3D.py`
 - **Web Demo**: `v1/demo001.html`
+![V1 Visualization](images/v1_viz.png)
 
 ### `common_data/`
 Shared source data files (JSON).
