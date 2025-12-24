@@ -35,8 +35,8 @@ from sklearn.metrics.pairwise import cosine_similarity
 # ==========================================
 # 設定
 # ==========================================
-input_file = "integrated_arts_courses.json"
-# input_file = "subject_details_main_2025-04-03.json"
+input_file = "../common_data/integrated_arts_courses.json"
+# input_file = "../common_data/subject_details_main_2025-04-03.json"
 
 output_file = "syllabus_vectors.json"
 metadata_file = "course_metadata.json"

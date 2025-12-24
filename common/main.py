@@ -29,7 +29,7 @@ import re
 BASE_URL_TEMPLATE = "https://momiji.hiroshima-u.ac.jp/syllabusHtml/2025_0101_{}.html"
 
 # スクレイピング結果の保存先
-OUTPUT_FILE = "hiroshima_u_syllabus_data.json"
+OUTPUT_FILE = "../common_data/hiroshima_u_syllabus_data.json"
 
 # 生成する科目コードの範囲設定
 # 例: AKY01001 〜 AKY01020 までを探索する場合
