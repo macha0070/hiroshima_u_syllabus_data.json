@@ -231,9 +231,14 @@ def main():
         scores = sim_matrix[i]
         scores[i] = -1
         top_indices = scores.argsort()[::-1][:top_k]
+        # スコアが0より大きいものだけ選ぶ (全く関係ないものはおすすめしない)
         filtered_indices = [idx for idx in top_indices if scores[idx] > 0]
-        recommended_ids = [course_ids[idx] for idx in filtered_indices]
-        recommendations[course_ids[i]] = recommended_ids
+        
+        # IDとスコア(パーセンテージ用に保持)のリストに変換
+        # [ [id, score], [id, score], ... ]
+        recommended_data = [[course_ids[idx], round(scores[idx], 3)] for idx in filtered_indices]
+        
+        recommendations[course_ids[i]] = recommended_data
 
     with open(recommendation_file, "w", encoding="utf-8") as f:
         json.dump(recommendations, f, ensure_ascii=False, separators=(',', ':'))

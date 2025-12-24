@@ -71,8 +71,20 @@ def main():
             if sim >= threshold:
                 G.add_edge(course_ids[i], course_ids[j], weight=sim)
                 
+    # Set Japanese font for Windows
+    plt.rcParams['font.family'] = 'MS Gothic'
+
     print(f"Nodes: {G.number_of_nodes()}")
     print(f"Edges: {G.number_of_edges()}")
+
+    # Print Top Correlations (Edges)
+    print("\n--- Top 20 Correlations (相関) ---")
+    sorted_edges = sorted(G.edges(data=True), key=lambda x: x[2]['weight'], reverse=True)
+    for u, v, data in sorted_edges[:20]:
+        u_name = G.nodes[u]['title']
+        v_name = G.nodes[v]['title']
+        print(f"{u_name} <--> {v_name} : {data['weight']:.3f}")
+    print("----------------------------------\n")
     
     # Remove isolates (optional, but good for visualization)
     G.remove_nodes_from(list(nx.isolates(G)))
