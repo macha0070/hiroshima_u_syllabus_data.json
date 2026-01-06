@@ -818,13 +818,15 @@
             // Build Mermaid
             let mm = "graph LR\n";
             mm += "classDef blueNode fill:#e8f0fe,stroke:#1a73e8,color:#1a73e8,rx:5,ry:5,stroke-width:2px,width:160px; \n";
+            mm += "classDef genEdNode fill:#e6fffa,stroke:#00a86b,color:#007a4d,rx:5,ry:5,stroke-width:2px,width:160px; \n";
             mm += "classDef default text-align:left;\n";
 
             // Interaction Callback
             window.roadmapClick = function (id) {
                 toggleCourse(id);
                 // feedback
-                alert('Toggled ' + detailsData[id].n + ' in schedule.');
+                const name = detailsData[id] ? detailsData[id].n : (id.startsWith('GEN') ? id : 'Course');
+                alert('Toggled ' + name + ' in schedule.');
             };
 
             for (let y = 1; y <= 4; y++) {
@@ -834,7 +836,9 @@
 
                 years[y].forEach(c => {
                     const safeName = c.n.replace(/[\(\)\[\]"']/g, "").substring(0, 15) + (c.n.length > 15 ? "..." : "");
-                    mm += `${c.id}["${safeName}"]:::blueNode\n`;
+                    let styleClass = "blueNode";
+                    if (c.id.startsWith("GEN_") || c.id.startsWith("A10")) styleClass = "genEdNode";
+                    mm += `${c.id}["${safeName}"]:::${styleClass}\n`;
                     mm += `click ${c.id} call roadmapClick("${c.id}")\n`;
                 });
                 mm += "end\n";
