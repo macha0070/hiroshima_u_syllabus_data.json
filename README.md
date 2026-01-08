@@ -4,7 +4,13 @@ This project is organized into versions to manage different stages of developmen
 
 ## 📂 Directory Structure
 
-### `v2/` (Latest & Recommended)
+### `v3/` (Experimental)
+Focuses on curriculum visualization and roadmap generation.
+- **Roadmap**: Visualizes course connections and "Year 1" paths using Mermaid.js.
+- **Web Demo**: `v3/demo003.html` (Requires `v2` data).
+![V3 Visualization](images/v3_roadmap.png)
+
+### `v2/` (Stable & Recommended)
 Contains the latest analysis logic, including 2D interactive graphs and improved skill tagging.
 - **Run Analysis**: `cd v2; python preprocess002.py`
 - **Visualize (2D Interactive)**: `cd v2; python NetworkX2D002.py`
