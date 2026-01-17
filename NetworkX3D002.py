@@ -78,9 +78,9 @@ def main():
     print(f"Edges: {G.number_of_edges()}")
 
     # Print Top Correlations (Edges)
-    print("\n--- Top 20 Correlations (相関) ---")
+    print("\n--- Top 100 Correlations (相関) ---")
     sorted_edges = sorted(G.edges(data=True), key=lambda x: x[2]['weight'], reverse=True)
-    for u, v, data in sorted_edges[:20]:
+    for u, v, data in sorted_edges[:100]:
         u_name = G.nodes[u]['title']
         v_name = G.nodes[v]['title']
         print(f"{u_name} <--> {v_name} : {data['weight']:.3f}")
