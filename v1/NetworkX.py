@@ -22,8 +22,11 @@ plt.rcParams['font.family'] = 'MS Gothic'
 
 import json
 
+import os
+
 # 1. データの準備（JSONから読み込み）
-json_path = 'subject_details_main_2025-04-03.json'
+base_dir = os.path.dirname(os.path.abspath(__file__))
+json_path = os.path.join(base_dir, '../common_data/subject_details_main_2025-04-03.json')
 with open(json_path, 'r', encoding='utf-8') as f:
     data = json.load(f)
 

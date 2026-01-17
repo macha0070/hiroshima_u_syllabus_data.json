@@ -41,13 +41,16 @@ from sklearn.metrics.pairwise import cosine_similarity
 # ==========================================
 # 設定
 # ==========================================
-# デモ用に軽量なファイルを使用する場合はこちら
-input_file = "integrated_arts_courses.json"
-# input_file = "subject_details_main_2025-04-03.json" # 全データを使う場合
+import os
+base_dir = os.path.dirname(os.path.abspath(__file__))
 
-output_file = "syllabus_vectors.json" # ベクトルデータ
-metadata_file = "course_metadata.json" # メタデータ
-recommendation_file = "recommendations.json" # おすすめ授業データ
+# デモ用に軽量なファイルを使用する場合はこちら
+input_file = os.path.join(base_dir, "../common_data/integrated_arts_courses.json")
+# input_file = os.path.join(base_dir, "../common_data/subject_details_main_2025-04-03.json") # 全データを使う場合
+
+output_file = os.path.join(base_dir, "syllabus_vectors.json") # ベクトルデータ
+metadata_file = os.path.join(base_dir, "course_metadata.json") # メタデータ
+recommendation_file = os.path.join(base_dir, "recommendations.json") # おすすめ授業データ
 
 # ==========================================
 # データの読み込み

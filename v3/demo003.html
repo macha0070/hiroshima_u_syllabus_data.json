@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hiroshima Univ. Syllabus Search & Roadmap</title>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: false, securityLevel: 'loose' });
+        window.mermaid = mermaid;
+    </script>
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --surface: #ffffff;
+            --background: #f8f9fa;
+            --text-main: #202124;
+            --text-sub: #5f6368;
+            --border: #dadce0;
+            --success: #188038;
+            --grid-line: #e0e0e0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* HEADER */
+        header {
+            width: 100%;
+            background: var(--surface);
+            box-shadow: 0 1px 2px rgba(60, 64, 67, 0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        h1 {
+            margin: 12px 0;
+            font-size: 1.4rem;
+            color: var(--text-main);
+        }
+
+        /* MAIN LAYOUT */
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            gap: 20px;
+            height: calc(100vh - 80px);
+        }
+
+        /* LEFT: SCHEDULE AREA */
+        .schedule-area {
+            flex: 1;
+            background: var(--surface);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-width: 500px;
+        }
+
+        /* RIGHT: SEARCH AREA */
+        .search-area {
+            flex: 0 0 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            height: 100%;
+        }
+
+        /* TABS & PANELS */
+        .search-mode-tabs {
+            display: flex;
+            background: var(--surface);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            padding: 4px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            border: none;
+            background: none;
+            padding: 8px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .mode-btn.active {
+            background: #e8f0fe;
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .search-content {
+            flex: 1;
+            background: var(--surface);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 15px;
+            display: none;
+        }
+
+        .search-content.active {
+            display: block;
+        }
+
+        /* GRID STYLES */
+        .term-selector {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            background: #f1f3f4;
+        }
+
+        .term-tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: var(--text-sub);
+            border-right: 1px solid var(--border);
+        }
+
+        .term-tab:last-child {
+            border-right: none;
+        }
+
+        .term-tab.active {
+            background: var(--surface);
+            color: var(--primary);
+            font-weight: bold;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .timetable-wrapper {
+            flex: 1;
+            overflow: auto;
+            padding: 10px;
+        }
+
+        table.timetable {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            font-size: 0.85rem;
+        }
+
+        .timetable th,
+        .timetable td {
+            border: 1px solid var(--grid-line);
+            text-align: center;
+            padding: 4px;
+            height: 50px;
+        }
+
+        .timetable th {
+            background: #f8f9fa;
+            color: var(--text-sub);
+            font-weight: normal;
+            height: 30px;
+        }
+
+        .timetable .period-col {
+            width: 40px;
+            background: #f8f9fa;
+            font-weight: bold;
+            color: var(--text-sub);
+        }
+
+        .grid-cell {
+            vertical-align: top;
+            font-size: 0.75rem;
+        }
+
+        .class-item {
+            background: #e8f0fe;
+            color: #1967d2;
+            padding: 4px;
+            margin-bottom: 2px;
+            border-radius: 4px;
+            text-align: left;
+            cursor: pointer;
+            border-left: 3px solid #1967d2;
+            line-height: 1.2;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            line-clamp: 3;
+            /* Standard */
+        }
+
+        .class-item:hover {
+            background: #d2e3fc;
+        }
+
+        /* COURSE CARDS */
+        .course-card {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            transition: all 0.2s;
+        }
+
+        .course-title {
+            color: #1a0dab;
+            font-weight: bold;
+            margin-bottom: 4px;
+            font-size: 0.95rem;
+            cursor: pointer;
+        }
+
+        .course-meta {
+            font-size: 0.8rem;
+            color: #5f6368;
+            margin-bottom: 6px;
+        }
+
+        .add-btn {
+            width: 100%;
+            padding: 6px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 5px;
+            color: var(--primary);
+            font-weight: bold;
+            font-size: 0.85rem;
+        }
+
+        .add-btn:hover {
+            background: #f1f3f4;
+        }
+
+        .add-btn.added {
+            background: #e6f4ea;
+            color: var(--success);
+            border-color: transparent;
+        }
+
+        /* INPUTS */
+        .search-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+
+        .filter-select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 8px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+        }
+
+        /* LOADING */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* MODAL */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 200;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: var(--surface);
+            margin: 10% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 600px;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .close-modal {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-modal:hover {
+            color: black;
+        }
+
+        .related-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="loading-screen">
+        <div class="spinner"></div>
+        <p style="margin-top:10px;">Loading Data...</p>
+    </div>
+
+    <header>
+        <h1>Hiroshima Univ. Syllabus Search & Schedule</h1>
+    </header>
+
+    <div class="container">
+
+        <!-- LEFT: SCHEDULE GRID -->
+        <div class="schedule-area">
+            <div class="term-selector">
+                <div class="term-tab active" onclick="setTerm(1)">Term 1 (前期前半)</div>
+                <div class="term-tab" onclick="setTerm(2)">Term 2 (前期後半)</div>
+                <div class="term-tab" onclick="setTerm(3)">Term 3 (後期前半)</div>
+                <div class="term-tab" onclick="setTerm(4)">Term 4 (後期後半)</div>
+            </div>
+
+            <div class="timetable-wrapper">
+                <table class="timetable">
+                    <thead>
+                        <tr>
+                            <th class="period-col"></th>
+                            <th>Mon</th>
+                            <th>Tue</th>
+                            <th>Wed</th>
+                            <th>Thu</th>
+                            <th>Fri</th>
+                        </tr>
+                    </thead>
+                    <tbody id="grid-body">
+                        <!-- JS Generated -->
+                    </tbody>
+                </table>
+            </div>
+            <div style="padding:10px; border-top:1px solid var(--border); text-align:right;">
+                <button onclick="clearSchedule()"
+                    style="color:#d93025; border:none; background:none; cursor:pointer; font-size:0.9rem;">Clear
+                    Schedule</button>
+            </div>
+        </div>
+
+        <!-- RIGHT: SEARCH TOOLS -->
+        <div class="search-area">
+            <div class="search-mode-tabs">
+                <button class="mode-btn active" onclick="setSearchMode('ai')">🤖 AI Recommendation</button>
+                <button class="mode-btn" onclick="setSearchMode('filter')">🔍 Details Filter</button>
+                <button class="mode-btn" onclick="setSearchMode('roadmap')">🗺️ Roadmap</button>
+            </div>
+
+            <!-- AI Search Panel -->
+            <div id="panel-ai" class="search-content active">
+                <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:10px;">
+                    <label style="font-size:0.85rem; font-weight:bold; color:var(--text-sub);">1. Interests</label>
+                    <input type="text" id="aiInput" class="search-input" placeholder="e.g. AI, History, Sports..."
+                        style="margin-bottom:0;">
+
+                    <label style="font-size:0.85rem; font-weight:bold; color:var(--text-sub);">2. Career Goal</label>
+                    <input type="text" id="aiCareer" class="search-input"
+                        placeholder="e.g. Teacher, Engineer, Global Leader..." style="margin-bottom:0;">
+
+                    <label style="font-size:0.85rem; font-weight:bold; color:var(--text-sub);">3. Focus Area</label>
+                    <select id="aiFocus" class="filter-select" style="margin-bottom:0;">
+                        <option value="">No Preference (General)</option>
+                        <option value="stem">STEM (Science, Tech, Math)</option>
+                        <option value="humanities">Humanities (Art, History, Lit)</option>
+                        <option value="social">Social Sciences (Econ, Law, Edu)</option>
+                        <select id="aiFocus" class="filter-select" style="margin-bottom:0;">
+                            <option value="">No Preference (General)</option>
+                            <option value="stem">STEM (Science, Tech, Math)</option>
+                            <option value="humanities">Humanities (Art, History, Lit)</option>
+                            <option value="social">Social Sciences (Econ, Law, Edu)</option>
+                        </select>
+
+                        <label style="font-size:0.85rem; font-weight:bold; color:var(--text-sub);">4. Category
+                            Filter</label>
+                        <select id="aiArea" class="filter-select" style="margin-bottom:4px;">
+                            <option value="">All Areas (領域)</option>
+                        </select>
+                        <select id="aiField" class="filter-select" style="margin-bottom:0;">
+                            <option value="">All Fields (分野)</option>
+                        </select>
+
+                        <button onclick="runAiSearch()" class="add-btn"
+                            style="background:var(--primary); color:white; margin-top:5px;">
+                            ✨ Update Recommendations
+                        </button>
+                </div>
+                <div id="ai-results"></div>
+            </div>
+
+            <!-- Roadmap Panel -->
+            <div id="panel-roadmap" class="search-content">
+                <div style="margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                    <label style="font-size:0.85rem; font-weight:bold; display:block; margin-bottom:5px;">Select Field
+                        (分野):</label>
+                    <select id="roadmapField" class="filter-select" onchange="generateRoadmap()">
+                        <option value="">-- Choose Field --</option>
+                    </select>
+                </div>
+                <div id="roadmap-container" style="overflow:auto; height:calc(100% - 60px);">
+                    <div style="color:#777; text-align:center; padding:20px;">
+                        Select a field to view the course roadmap.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Search Panel -->
+            <div id="panel-filter" class="search-content">
+                <select id="f-dept" class="filter-select">
+                    <option value="">All Departments</option>
+                </select>
+                <select id="f-area" class="filter-select">
+                    <option value="">All Areas (領域)</option>
+                </select>
+                <select id="f-field" class="filter-select">
+                    <option value="">All Fields (分野)</option>
+                </select>
+                <select id="f-term" class="filter-select">
+                    <option value="">Any Term</option>
+                    <option value="前期">前期 (Sem 1)</option>
+                    <option value="後期">後期 (Sem 2)</option>
+                </select>
+                <select id="f-day" class="filter-select">
+                    <option value="">Any Day</option>
+                    <option value="月">月 (Mon)</option>
+                    <option value="火">火 (Tue)</option>
+                    <option value="水">水 (Wed)</option>
+                    <option value="木">木 (Thu)</option>
+                    <option value="金">金 (Fri)</option>
+                </select>
+                <input type="text" id="f-kw" class="search-input" placeholder="Name or Instructor...">
+                <button onclick="runFilterSearch()" class="add-btn"
+                    style="background:var(--primary); color:white;">Search</button>
+                <div id="filter-results" style="margin-top:15px;"></div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- MODAL -->
+    <div id="related-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <h2 id="modal-title" style="margin-top:0;">Related Courses</h2>
+            <p id="modal-desc" style="color:var(--text-sub); font-size:0.9rem;"></p>
+            <div id="related-container" class="related-list"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA & STATE ---
+        // vectorData: { v: {vocab}, d: [ [[idx],[val]], ... ], i: [ids] }
+        // detailsData: { "ID": { n, d, t, w, i } }
+        let vectorData = null;
+        let detailsData = null;
+        let recommendations = null;
+        let mySchedule = new Set();
+        let currentTerm = 1;
+
+        const segmenter = new Intl.Segmenter("ja-JP", { granularity: "word" });
+
+        // --- INIT ---
+        window.addEventListener('DOMContentLoaded', async () => {
+            initGrid();
+            loadSchedule();
+
+            try {
+                // FETCH OPTIMIZED FILES
+                const [vRes, dRes, rRes] = await Promise.all([
+                    fetch('../v2/syllabus_vectors.json'),
+                    fetch('../v2/course_metadata.json'),
+                    fetch('../v2/recommendations.json')
+                ]);
+                vectorData = await vRes.json();
+                detailsData = await dRes.json();
+                try { recommendations = await rRes.json(); } catch (e) { console.warn("No recs found"); }
+
+                document.getElementById('loading-screen').style.display = 'none';
+
+                document.getElementById('loading-screen').style.display = 'none';
+
+                populateFilterDepts();
+                populateFilterCategories(); // Add this
+                renderScheduleGrid();
+            } catch (e) {
+                document.getElementById('loading-screen').innerHTML = `<p style="color:red">Loading Error: ${e.message}<br>Did you run preprocess001.py?</p>`;
+            }
+        });
+
+        // --- GRID SYSTEM ---
+        function initGrid() {
+            const tbody = document.getElementById('grid-body');
+            let html = '';
+            for (let p = 1; p <= 12; p++) {
+                html += `
+                <tr>
+                    <td class="period-col">${p}</td>
+                    <td id="cell-Mon-${p}" class="grid-cell" data-day="月" data-period="${p}"></td>
+                    <td id="cell-Tue-${p}" class="grid-cell" data-day="火" data-period="${p}"></td>
+                    <td id="cell-Wed-${p}" class="grid-cell" data-day="水" data-period="${p}"></td>
+                    <td id="cell-Thu-${p}" class="grid-cell" data-day="木" data-period="${p}"></td>
+                    <td id="cell-Fri-${p}" class="grid-cell" data-day="金" data-period="${p}"></td>
+                </tr>`;
+            }
+            tbody.innerHTML = html;
+        }
+
+        window.setTerm = function (t) {
+            currentTerm = t;
+            document.querySelectorAll('.term-tab').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.term-tab')[t - 1].classList.add('active');
+            renderScheduleGrid();
+        }
+
+        function parseScheduleString(str) {
+            if (!str) return [];
+            const dayMap = { '月': 'Mon', '火': 'Tue', '水': 'Wed', '木': 'Thu', '金': 'Fri' };
+            const results = [];
+
+            // Basic parsing for "月1-2" etc.
+            const parts = str.split(/[,\s]+/);
+            parts.forEach(part => {
+                let dayFn = null;
+                for (let k in dayMap) if (part.includes(k)) dayFn = dayMap[k];
+                const nums = part.match(/\d+/g);
+                if (dayFn && nums && nums.length > 0) {
+                    let start = parseInt(nums[0]);
+                    let end = nums.length > 1 ? parseInt(nums[1]) : start;
+                    let periods = [];
+                    for (let i = start; i <= end; i++) periods.push(i);
+                    results.push({ day: dayFn, periods: periods });
+                }
+            });
+            return results;
+        }
+
+        function getTerms(termStr) {
+            if (!termStr) return [];
+            const terms = [];
+            if (termStr.includes("１ターム") || termStr.includes("1ターム")) terms.push(1);
+            if (termStr.includes("２ターム") || termStr.includes("2ターム")) terms.push(2);
+            if (termStr.includes("３ターム") || termStr.includes("3ターム")) terms.push(3);
+            if (termStr.includes("４ターム") || termStr.includes("4ターム")) terms.push(4);
+            if (terms.length === 0) {
+                if (termStr.includes("前期")) terms.push(1, 2);
+                if (termStr.includes("後期")) terms.push(3, 4);
+            }
+            return terms;
+        }
+
+        function renderScheduleGrid() {
+            document.querySelectorAll('.grid-cell').forEach(td => td.innerHTML = '');
+
+            mySchedule.forEach(id => {
+                const info = detailsData[id];
+                if (!info) return; // Might happen if ID from old save not in new metadata
+
+                if (!getTerms(info.t).includes(currentTerm)) return;
+
+                const timeSlots = parseScheduleString(info.w);
+                timeSlots.forEach(slot => {
+                    slot.periods.forEach(p => {
+                        const cellId = `cell-${slot.day}-${p}`;
+                        const cell = document.getElementById(cellId);
+                        if (cell) {
+                            cell.innerHTML += `
+                            <div class="class-item" onclick="removeClass('${id}')" title="${info.n}">
+                                ${info.n}
+                            </div>`;
+                        }
+                    });
+                });
+            });
+        }
+
+        // --- MANAGE SCHEDULE ---
+        window.toggleCourse = function (id) {
+            if (mySchedule.has(id)) mySchedule.delete(id);
+            else mySchedule.add(id);
+            saveSchedule();
+            renderScheduleGrid();
+            refreshButtons(id);
+        }
+
+        window.removeClass = function (id) {
+            if (confirm("Remove this class?")) {
+                mySchedule.delete(id);
+                saveSchedule();
+                renderScheduleGrid();
+                refreshButtons(id);
+            }
+        }
+
+        window.clearSchedule = function () {
+            if (confirm("Clear all?")) {
+                mySchedule.clear();
+                saveSchedule();
+                renderScheduleGrid();
+                document.querySelectorAll('.add-btn.added').forEach(b => {
+                    const bid = b.getAttribute('data-id');
+                    if (bid) refreshButtons(bid);
+                });
+            }
+        }
+
+        function saveSchedule() { localStorage.setItem('mySchedule', JSON.stringify([...mySchedule])); }
+        function loadSchedule() {
+            const s = localStorage.getItem('mySchedule');
+            if (s) JSON.parse(s).forEach(i => mySchedule.add(i));
+        }
+
+        function refreshButtons(id) {
+            const btns = document.querySelectorAll(`.btn-${id}`);
+            btns.forEach(b => {
+                if (mySchedule.has(id)) { b.classList.add('added'); b.innerHTML = '✓ Added'; }
+                else { b.classList.remove('added'); b.innerHTML = '+ Add to Schedule'; }
+            });
+        }
+
+        // --- SEARCH UI ---
+        window.setSearchMode = function (mode) {
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.search-content').forEach(p => p.classList.remove('active'));
+            if (mode === 'ai') {
+                document.querySelector('button[onclick="setSearchMode(\'ai\')"]').classList.add('active');
+                document.getElementById('panel-ai').classList.add('active');
+            } else if (mode === 'filter') {
+                document.querySelector('button[onclick="setSearchMode(\'filter\')"]').classList.add('active');
+                document.getElementById('panel-filter').classList.add('active');
+            } else if (mode === 'roadmap') {
+                document.querySelector('button[onclick="setSearchMode(\'roadmap\')"]').classList.add('active');
+                document.getElementById('panel-roadmap').classList.add('active');
+            }
+        }
+
+        function populateFilterDepts() {
+            const depts = new Set();
+            for (let id in detailsData) {
+                if (detailsData[id].d) depts.add(detailsData[id].d);
+            }
+            const sel = document.getElementById('f-dept');
+            Array.from(depts).sort().forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d; opt.innerText = d; sel.appendChild(opt);
+            });
+        }
+
+        function populateFilterCategories() {
+            const areas = new Set();
+            const fields = new Set();
+            for (let id in detailsData) {
+                if (detailsData[id].a && detailsData[id].a !== "その他") areas.add(detailsData[id].a);
+                if (detailsData[id].f) fields.add(detailsData[id].f);
+            }
+
+            // Populate Areas (for both AI and Filter panels)
+            ['aiArea', 'f-area'].forEach(eid => {
+                const sel = document.getElementById(eid);
+                Array.from(areas).sort().forEach(a => {
+                    const opt = document.createElement('option');
+                    opt.value = a; opt.innerText = a; sel.appendChild(opt);
+                });
+            });
+
+            // Populate Fields (for both AI, Filter, and Roadmap panels)
+            ['aiField', 'f-field', 'roadmapField'].forEach(eid => {
+                const sel = document.getElementById(eid);
+                Array.from(fields).sort().forEach(f => {
+                    const opt = document.createElement('option');
+                    opt.value = f; opt.innerText = f; sel.appendChild(opt);
+                });
+            });
+        }
+
+        // --- FILTER SEARCH ---
+        window.runFilterSearch = function () {
+            const dept = document.getElementById('f-dept').value;
+            const area = document.getElementById('f-area').value;
+            const field = document.getElementById('f-field').value;
+            const term = document.getElementById('f-term').value;
+            const day = document.getElementById('f-day').value;
+            const kw = document.getElementById('f-kw').value.toLowerCase();
+
+            const matches = [];
+            // Iterate all keys
+            for (let id in detailsData) {
+                const c = detailsData[id];
+                // c structure: { n, d, t, w, i }
+                if (dept && c.d !== dept) continue;
+                if (area && c.a !== area) continue;
+                if (field && c.f !== field) continue;
+                if (term && !c.t.includes(term)) continue;
+                if (day && !c.w.includes(day)) continue;
+                if (kw) {
+                    const text = (c.n + c.i).toLowerCase();
+                    if (!text.includes(kw)) continue;
+                }
+                matches.push({ id: id, ...c });
+                if (matches.length >= 50) break;
+            }
+            renderList('filter-results', matches, false);
+        }
+
+        // --- ROADMAP (MERMAID) ---
+        window.generateRoadmap = async function () {
+            const field = document.getElementById('roadmapField').value;
+            const container = document.getElementById('roadmap-container');
+
+            if (!field) {
+                container.innerHTML = '<div style="color:#777; text-align:center; padding:20px;">Select a field to view the course roadmap.</div>';
+                return;
+            }
+
+            container.innerHTML = '<div style="text-align:center; padding:20px;">Generating Roadmap...</div>';
+
+            // Filter courses
+            const courses = [];
+            for (let id in detailsData) {
+                if (detailsData[id].f === field) {
+                    courses.push({ id, ...detailsData[id] });
+                }
+            }
+
+            if (courses.length === 0) {
+                container.innerHTML = '<div style="color:#777; text-align:center; padding:20px;">No courses found for this field.</div>';
+                return;
+            }
+
+            // --- INJECT GEN ED COURSES (User Request) ---
+            // Manually adding Math/Algo foundations for Year 1 if they aren't explicitly in the 1st year data
+            if (field === "数理情報科学" || field.includes("情報")) {
+                const genEds = [
+                    { id: "GEN_CALC1", n: "微積分学 I", d: "教養教育", t: "1年次生 前期", w: "推奨", i: "ー", a: "教養", f: field },
+                    { id: "GEN_LINALG1", n: "線形代数学 I", d: "教養教育", t: "1年次生 前期", w: "推奨", i: "ー", a: "教養", f: field },
+                    { id: "GEN_PROG1", n: "プログラミング入門", d: "教養教育", t: "1年次生 後期", w: "推奨", i: "ー", a: "教養", f: field },
+                    { id: "GEN_ALGO1", n: "アルゴリズム基礎", d: "教養教育", t: "1年次生 後期", w: "推奨", i: "ー", a: "教養", f: field },
+                    { id: "A1000001", n: "教養ゼミ", d: "教養教育", t: "1年次生 前期", w: "必須", i: "ー", a: "教養", f: field }
+                ];
+                // Add if not already present (check specific IDs or loose name match?)
+                // For now, just highlighting them.
+                courses.push(...genEds);
+            }
+
+            // Group by Year
+            const years = { 1: [], 2: [], 3: [], 4: [] };
+            courses.forEach(c => {
+                let y = 4;
+                if (c.t.includes("1年")) y = 1;
+                else if (c.t.includes("2年")) y = 2;
+                else if (c.t.includes("3年")) y = 3;
+                else if (c.t.includes("4年")) y = 4;
+                years[y].push(c);
+            });
+
+            // Build Mermaid
+            let mm = "graph LR\n";
+            mm += "classDef blueNode fill:#e8f0fe,stroke:#1a73e8,color:#1a73e8,rx:5,ry:5,stroke-width:2px,width:160px; \n";
+            mm += "classDef genEdNode fill:#e6fffa,stroke:#00a86b,color:#007a4d,rx:5,ry:5,stroke-width:2px,width:160px; \n";
+            mm += "classDef default text-align:left;\n";
+
+            // Interaction Callback
+            window.roadmapClick = function (id) {
+                toggleCourse(id);
+                // feedback
+                const name = detailsData[id] ? detailsData[id].n : (id.startsWith('GEN') ? id : 'Course');
+                alert('Toggled ' + name + ' in schedule.');
+            };
+
+            for (let y = 1; y <= 4; y++) {
+                mm += `subgraph Y${y} [Year ${y}]\n`;
+                mm += `direction TB\n`;
+                if (years[y].length === 0) mm += `empty${y}[ ]:::hidden\n`;
+
+                years[y].forEach(c => {
+                    const safeName = c.n.replace(/[\(\)\[\]"']/g, "").substring(0, 15) + (c.n.length > 15 ? "..." : "");
+                    let styleClass = "blueNode";
+                    if (c.id.startsWith("GEN_") || c.id.startsWith("A10")) styleClass = "genEdNode";
+                    mm += `${c.id}["${safeName}"]:::${styleClass}\n`;
+                    mm += `click ${c.id} call roadmapClick("${c.id}")\n`;
+                });
+                mm += "end\n";
+            }
+
+            // Invisible links for structure
+            const rep1 = years[1][0]?.id;
+            const rep2 = years[2][0]?.id;
+            const rep3 = years[3][0]?.id;
+            const rep4 = years[4][0]?.id;
+
+            if (rep1 && rep2) mm += `${rep1} ~~~ ${rep2}\n`;
+            if (rep2 && rep3) mm += `${rep2} ~~~ ${rep3}\n`;
+            if (rep3 && rep4) mm += `${rep3} ~~~ ${rep4}\n`;
+
+            // Render
+            try {
+                container.innerHTML = '<div class="mermaid">' + mm + '</div>';
+                await window.mermaid.run({
+                    nodes: container.querySelectorAll('.mermaid')
+                });
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = '<div style="color:red; padding:10px; font-size:0.8rem;">Error rendering roadmap (Graph too large?).</div>';
+            }
+        }
+
+        // --- AI SEARCH (SPARSE) ---
+        // Removed auto-event listener for simple input to favor button click for multi-input
+
+        function runAiSearch() {
+            const interest = document.getElementById('aiInput').value.trim();
+            const career = document.getElementById('aiCareer').value.trim();
+            const focus = document.getElementById('aiFocus').value;
+
+            // Synthesis of text
+            let finalText = interest;
+            if (career) finalText += " " + career;
+
+            // Keyword Boosting
+            let boostKeywords = "";
+            if (focus === "stem") {
+                boostKeywords = "Math Science Experiment Data Analysis Physics Chemistry Biology Programming Technology Integeral Differential";
+            } else if (focus === "humanities") {
+                boostKeywords = "History Literature Culture Art Philosophy Language Thought Religion";
+            } else if (focus === "social") {
+                boostKeywords = "Society Economics Law Media Politics Education Psychology Management Peace";
+            }
+
+            if (boostKeywords) finalText += " " + boostKeywords;
+
+            if (!finalText.trim() && !document.getElementById('aiArea').value && !document.getElementById('aiField').value) {
+                document.getElementById('ai-results').innerHTML = '<div style="color:#777;padding:10px;">Please enter some interests or career goals, or select a category.</div>';
+                return;
+            }
+
+            performSparseVectorSearch(finalText);
+        }
+
+        function performSparseVectorSearch(query) {
+            const vocab = vectorData.v; // Dictionary
+            const courses = vectorData.d; // List of [[indices], [values]]
+            const courseIds = vectorData.i; // List of IDs
+
+            // Get Filters
+            const filterArea = document.getElementById('aiArea').value;
+            const filterField = document.getElementById('aiField').value;
+
+            // ... (rest is calculation)
+            const queryIndices = [];
+            Array.from(segmenter.segment(query)).filter(x => x.isWordLike).forEach(w => {
+                if (vocab[w.segment] !== undefined) queryIndices.push(vocab[w.segment]);
+            });
+
+            if (queryIndices.length === 0) { renderList('ai-results', []); return; }
+
+            // Scores Map
+            const scores = [];
+            const queryNorm = Math.sqrt(queryIndices.length); // Simplified
+
+            for (let i = 0; i < courses.length; i++) {
+                const [indices, values] = courses[i];
+                let dot = 0;
+                let sumSq = 0;
+
+                // Sparse Dot Product
+                // O(N_course_terms * N_query_terms) ? No, just linear scan matched or hash lookup
+                // Query is small array. Iterate query indices or course indices?
+                // Since course is stored as sorted indices? No guarantees. 
+                // Simple loop:
+                for (let k = 0; k < indices.length; k++) {
+                    sumSq += values[k] * values[k];
+                    if (queryIndices.includes(indices[k])) {
+                        dot += values[k]; // Assuming query vector is binary 1s
+                    }
+                }
+
+                if (dot > 0 || (currentTerm && query.trim() == "")) { // Allow match if filtered even if dot is 0? No, vector search needs query. 
+                    // Wait, if user ONLY selects "Area" but no text, dot will be 0.
+                    // If text is empty, we generally want to return all matching the filter?
+                    // Sparse search usually requires a query. 
+                    // Let's implement strict filtering:
+
+                    const meta = detailsData[courseIds[i]];
+                    if (filterArea && meta.a !== filterArea) continue;
+                    if (filterField && meta.f !== filterField) continue;
+
+                    let normC = Math.sqrt(sumSq);
+                    scores.push({
+                        id: courseIds[i],
+                        score: dot / (queryNorm * normC)
+                    });
+                }
+            }
+
+            // If query is empty but filters are set, we should ideally show all matching filters.
+            // But this vector search function relies on dot product.
+            // Fix: If query is empty strings, skip vector calc and just filter.
+            if (!query.trim()) {
+                scores.length = 0;
+                for (let i = 0; i < courses.length; i++) {
+                    const cid = courseIds[i];
+                    const meta = detailsData[cid];
+                    if (filterArea && meta.a !== filterArea) continue;
+                    if (filterField && meta.f !== filterField) continue;
+                    scores.push({ id: cid, score: 0 });
+                }
+            }
+
+            scores.sort((a, b) => b.score - a.score);
+            const results = scores.slice(0, 20).map(x => ({ ...x, ...detailsData[x.id] }));
+            renderList('ai-results', results, true);
+        }
+
+        function renderList(targetId, list, showScore) {
+            const container = document.getElementById(targetId);
+            if (list.length === 0) { container.innerHTML = '<div style="color:#777;padding:10px;">No matches</div>'; return; }
+            let html = '';
+            list.forEach(c => {
+                const added = mySchedule.has(c.id);
+                // Schema: n=name, d=dept, t=term, w=when, i=instructor
+                html += `
+                <div class="course-card">
+                    <div class="course-title" onclick="openModal('${c.id}')">${c.n}</div>
+                    <div class="course-meta">
+                        ${c.d} | ${c.t}<br>
+                        ${c.w} | ${c.i}<br>
+                        ${c.a} | ${c.f}
+                    </div>
+                    <button class="add-btn btn-${c.id} ${added ? 'added' : ''}" 
+                        data-id="${c.id}"
+                        onclick="toggleCourse('${c.id}')">
+                        ${added ? '✓ Added' : '+ Add to Schedule'}
+                    </button>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        // --- MODAL SYSTEM ---
+        window.openModal = function (id) {
+            const course = detailsData[id];
+            if (!course) return;
+
+            // Basic Info
+            document.getElementById('modal-title').innerText = course.n;
+            document.getElementById('modal-desc').innerHTML = `
+                <strong>Instructor:</strong> ${course.i}<br>
+                <strong>Term:</strong> ${course.t} | <strong>Schedule:</strong> ${course.w}<br>
+                <strong>Area:</strong> ${course.a} | <strong>Field:</strong> ${course.f}
+            `;
+
+            // Recommendations
+            const recList = recommendations[id] || [];
+            const recContainer = document.getElementById('related-container');
+
+            if (recList.length === 0) {
+                recContainer.innerHTML = '<p style="color:#777;">No recommendations available.</p>';
+            } else {
+                let html = '';
+                recList.forEach(item => {
+                    // item is [id, score]
+                    const [rid, score] = item;
+                    const rCourse = detailsData[rid];
+                    if (!rCourse) return;
+
+                    const added = mySchedule.has(rid);
+                    const percent = Math.round(score * 100);
+
+                    html += `
+                    <div class="course-card" style="border-left: 4px solid var(--primary);">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                             <div class="course-title" style="margin:0;" onclick="openModal('${rid}')">${rCourse.n}</div>
+                             <div style="font-weight:bold; color:var(--primary);">${percent}% Match</div>
+                        </div>
+                        <div class="course-meta">
+                             ${rCourse.d} | ${rCourse.i}
+                        </div>
+                        <button class="add-btn btn-${rid} ${added ? 'added' : ''}" 
+                            data-id="${rid}"
+                            onclick="toggleCourse('${rid}')">
+                            ${added ? '✓ Added' : '+ Add to Schedule'}
+                        </button>
+                    </div>`;
+                });
+                recContainer.innerHTML = html;
+            }
+
+            // Show Modal
+            document.getElementById('related-modal').style.display = 'block';
+        }
+
+        window.closeModal = function () {
+            document.getElementById('related-modal').style.display = 'none';
+        }
+
+        // Close when clicking outside
+        window.onclick = function (event) {
+            const modal = document.getElementById('related-modal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+    </script>
+</body>
+
+</html>

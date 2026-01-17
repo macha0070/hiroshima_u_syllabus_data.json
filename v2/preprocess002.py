@@ -35,12 +35,14 @@ from sklearn.metrics.pairwise import cosine_similarity
 # ==========================================
 # 設定
 # ==========================================
-input_file = "integrated_arts_courses.json"
-# input_file = "subject_details_main_2025-04-03.json"
+import os
+base_dir = os.path.dirname(os.path.abspath(__file__))
+# Note: ".." traverses up one level from v2 to root, then into common_data
+input_file = os.path.join(base_dir, "../common_data/integrated_arts_courses.json")
 
-output_file = "syllabus_vectors.json"
-metadata_file = "course_metadata.json"
-recommendation_file = "recommendations.json"
+output_file = os.path.join(base_dir, "syllabus_vectors.json")
+metadata_file = os.path.join(base_dir, "course_metadata.json")
+recommendation_file = os.path.join(base_dir, "recommendations.json")
 
 # ==========================================
 # スキル抽出用 定義
@@ -97,27 +99,74 @@ def get_words(text):
             words.append(token.base_form)
     return " ".join(words)
 
-def extract_skills(text, grade_year):
-    """
-    テキストからスキルを抽出し、年次やWelcomeメッセージに基づいてフィルタリングする
-    """
-    detected_skills = []
-    
-    # 1. Check for Welcome Pattern (Clear all if found)
-    if re.search(WELCOME_PATTERN, text):
-        return []
+# ==========================================
+# Patterns for Class Name Tags
+# ==========================================
+CLASS_NAME_TAGS = {
+    "tag_experiment": r'(実験)',
+    "tag_practice": r'(実習|演習)',
+    "tag_seminar": r'(ゼミ|輪講|卒業研究)',
+    "tag_intro": r'(概論|入門|基礎)',
+    "tag_advanced": r'(特論|応用)',
+}
 
-    # 2. Extract Skills by Regex
+def extract_skills(text, grade_year, info_dict):
+    """
+    テキスト、メタデータ、クラス名からタグ/スキルを抽出する
+    """
+    detected_skills = set()
+    
+    # --- 1. Existing Logic (Skills from Text) ---
+    # Check for Welcome Pattern (If found, we add a beginner tag instead of clearing all)
+    if re.search(WELCOME_PATTERN, text):
+        detected_skills.add("beginner_friendly")
+    
+    # Extract Skills by Regex (Existing)
     for skill_key, pattern in SKILL_PATTERNS.items():
         if re.search(pattern, text):
-            detected_skills.append(skill_key)
+            detected_skills.add(skill_key)
             
-    # 3. Grade Filter (If 1st year, remove advanced skills)
-    # 1年次はこれらを「学ぶ」のであって「前提」ではないと仮定
+    # Grade Filter for Advanced Skills (Existing Logic)
     if grade_year == 1:
-        detected_skills = [s for s in detected_skills if s not in ADVANCED_SKILLS]
+        for adv in ADVANCED_SKILLS:
+            if adv in detected_skills:
+                detected_skills.remove(adv)
+
+    # --- 2. New Logic: Class Name Tags ---
+    course_name = str(info_dict.get("授業科目名", ""))
+    for tag_key, pattern in CLASS_NAME_TAGS.items():
+        if re.search(pattern, course_name):
+            detected_skills.add(tag_key)
+
+    # --- 3. New Logic: Keyword Section Extraction ---
+    # Try to find "【キーワード】" blocks in the text
+    # Matches: 【キーワード】 term1, term2, term3 ... until Newline
+    keyword_match = re.search(r'(【キーワード】|Keywords:|キーワード：)(.*?)\n', text)
+    if keyword_match:
+        # Extract the content part
+        keywords_str = keyword_match.group(2).strip()
+        # Split by common delimiters (comma, space, nakaguro)
+        # Note: This might be noisy, so we'll just add the raw terms if they are short enough
+        candidates = re.split(r'[,、\s]+', keywords_str)
+        for c in candidates:
+            c = c.strip()
+            if len(c) > 1 and len(c) < 20: # Simple length filter
+                detected_skills.add(f"kw_{c}")
+
+    # --- 4. New Logic: Metadata Tags (Language, Type) ---
+    lang_val = str(info_dict.get("使用言語", ""))
+    if "日本" in lang_val or "J" in lang_val:
+        detected_skills.add("lang_japanese")
+    if "英" in lang_val or "E" in lang_val:
+        detected_skills.add("lang_english")
         
-    return list(set(detected_skills)) # Unique
+    type_val = str(info_dict.get("科目区分", ""))
+    if "専門" in type_val:
+        detected_skills.add("type_specialized")
+    elif "教養" in type_val or "基盤" in type_val:
+        detected_skills.add("type_general")
+
+    return list(detected_skills)
 
 def get_grade(term_str):
     """
@@ -165,7 +214,7 @@ def main():
 
         # --- 2. Skill Extraction ---
         grade = get_grade(str(info.get("開設期", "")))
-        skills = extract_skills(target_text, grade)
+        skills = extract_skills(target_text, grade, info)
         all_skills_data.append(skills)
 
         # --- 3. Metadata Prep ---

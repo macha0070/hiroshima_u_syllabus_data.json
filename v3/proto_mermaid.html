@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syllabus Roadmap Prototype (Mermaid)</title>
+    <!-- Load Mermaid.js -->
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: false });
+        window.mermaid = mermaid;
+    </script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .controls { margin-bottom: 20px; padding: 10px; background: #f0f0f0; border-radius: 8px; }
+        select { padding: 8px; font-size: 1rem; min-width: 200px; }
+        #graphDiv { border: 1px solid #ccc; padding: 20px; min-height: 400px; overflow: auto; }
+        
+        /* Custom Node Styling inside Mermaid */
+        /* We'll define this in the mermaid string, but can also add global CSS */
+    </style>
+</head>
+<body>
+
+    <h1>Course Roadmap Prototype</h1>
+    
+    <div class="controls">
+        <label>Select Field (分野): </label>
+        <select id="fieldSelect" onchange="generateGraph()">
+            <option value="">-- Choose Field --</option>
+            <!-- Populated by JS -->
+        </select>
+        <span id="courseCount" style="margin-left:10px; color:gray;"></span>
+    </div>
+
+    <div id="graphDiv"></div>
+
+    <script>
+        let courseData = {};
+
+        // Load Data
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Adjust path as needed. Assuming we are in v3/, data is in v2/
+                const res = await fetch('../v2/course_metadata.json');
+                courseData = await res.json();
+                populateDropdown();
+            } catch (e) {
+                document.getElementById('graphDiv').innerHTML = `<p style="color:red">Error loading data: ${e.message}</p>`;
+            }
+        });
+
+        function populateDropdown() {
+            const fields = new Set();
+            Object.values(courseData).forEach(c => {
+                if (c.f && c.f !== "その他") fields.add(c.f);
+            });
+            
+            const sel = document.getElementById('fieldSelect');
+            Array.from(fields).sort().forEach(f => {
+                const opt = document.createElement('option');
+                opt.value = f;
+                opt.innerText = f;
+                sel.appendChild(opt);
+            });
+        }
+
+        async function generateGraph() {
+            const field = document.getElementById('fieldSelect').value;
+            if (!field) return;
+
+            // 1. Filter Courses
+            const courses = [];
+            Object.entries(courseData).forEach(([id, c]) => {
+                if (c.f === field) {
+                    courses.push({ id, ...c });
+                }
+            });
+            
+            document.getElementById('courseCount').innerText = `${courses.length} courses found`;
+
+            // 2. Group by Year
+            // Heuristic process "t": "1年次生..." => Year 1
+            const years = { 1: [], 2: [], 3: [], 4: [] };
+            
+            courses.forEach(c => {
+                let y = 4; // default
+                if (c.t.includes("1年")) y = 1;
+                else if (c.t.includes("2年")) y = 2;
+                else if (c.t.includes("3年")) y = 3;
+                else if (c.t.includes("4年")) y = 4;
+                years[y].push(c);
+            });
+
+            // 3. Build Mermaid String
+            let mm = "graph LR\n";
+            
+            // Define styling
+            mm += "classDef blueNode fill:#007bff,stroke:#0056b3,color:white,rx:5,ry:5,stroke-width:2px,width:180px;\n";
+            mm += "classDef default text-align:left;\n";
+
+            // Create Subgraphs for Years to force structure
+            for (let y = 1; y <= 4; y++) {
+                mm += `subgraph Y${y} [Year ${y}]\n`;
+                mm += `direction TB\n`; // Top-Bottom inside the year column
+                
+                if (years[y].length === 0) {
+                    mm += `empty${y}[No Courses]:::hidden\n`;
+                }
+
+                years[y].forEach(c => {
+                    // Sanitize ID and Name for Mermaid
+                    // Mermaid IDs cannot have unicode or special chars easily, better to use the alphanumeric ID
+                    const safeName = c.n.replace(/[\(\)\[\]"']/g, "").substring(0, 20) + (c.n.length > 20 ? "..." : "");
+                    // wrap name in quotes
+                    mm += `${c.id}["${safeName}"]:::blueNode\n`;
+                });
+                mm += "end\n";
+            }
+
+            // ADD DUMMY LINKS TO FORCE LAYOUT (Optional, experimental)
+            // graph LR lays out subgraphs Left-Right automatically.
+            // But we might want visual connections. For now, let's just show nodes.
+            // If we want a "flow", we'd ideally have prerequisite data.
+            // Since we don't, I will just link them sequentially generically to show the "flowchart" look?
+            // Actually, request was "custom roadmap". 
+            // For now, let's just show the nodes in their year buckets.
+            // To ensure Y1 -> Y2 -> Y3 -> Y4 placement, we can add invisible links between subgraphs if needed,
+            // or invisible links between a representative node of each year.
+            
+            // Let's add invisible links to preserve order: Y1 -> Y2 -> Y3 -> Y4
+            // Find first node of each year
+            const rep1 = years[1][0]?.id;
+            const rep2 = years[2][0]?.id;
+            const rep3 = years[3][0]?.id;
+            const rep4 = years[4][0]?.id;
+
+            if (rep1 && rep2) mm += `${rep1} ~~~ ${rep2}\n`;
+            if (rep2 && rep3) mm += `${rep2} ~~~ ${rep3}\n`;
+            if (rep3 && rep4) mm += `${rep3} ~~~ ${rep4}\n`;
+
+            console.log(mm);
+
+            // 4. Render
+            const element = document.getElementById('graphDiv');
+            element.innerHTML = 'Rendering...';
+            
+            try {
+                // Reset mermaid
+                element.removeAttribute('data-processed');
+                
+                const { svg } = await window.mermaid.render('mermaidGraph', mm);
+                element.innerHTML = svg;
+            } catch (err) {
+                console.error(err);
+                element.innerHTML = "Error rendering graph (see console). Syntax might be too large or invalid.";
+            }
+        }
+    </script>
+</body>
+</html>
